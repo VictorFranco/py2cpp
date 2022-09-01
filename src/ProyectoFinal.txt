@@ -1,0 +1,27 @@
+def impresion(mensaje,informacion):
+    print(mensaje,informacion)
+def llenarLista(longitud):
+    Contenedor=[]
+    for i in range(0, longitud):
+        elemento = int(input("Introduce un numero: "))
+        Contenedor.append(elemento) 
+    return Contenedor
+def sumatoria(Lista):
+    suma=0
+    for x in range(0,len(Lista)):
+        suma=suma+Lista[x]
+    return suma
+def calcularProducto(Lista):
+    vActual=Lista[0]
+    for x in range(1,len(Lista)):
+        vActual=Lista[x]*vActual
+    return vActual
+
+print("Bienvenido a compiladores")
+Datos=input("Datos a introducir: ")
+impresion("El usuario introducira",Datos)
+Datos=llenarLista(int(Datos))
+Suma=sumatoria(Datos)
+impresion("La sumatoria de los numeros es: ",Suma)
+Producto=calcularProducto(Datos)
+impresion("El producto de los numeros es: ",Producto)
