@@ -4,3 +4,6 @@ Cargo.lock
 
 # Editor files
 *.swp
+
+# Output file
+/src/main.cpp
