@@ -1,16 +1,16 @@
 use regex::Regex;
 
 // head of declared function
-const HEAD_DEC_FUN: &str = r"def\s([a-zA-Z][a-zA-Z_-]*)\(([a-zA-Z][a-zA-Z0-9]*),?([a-zA-Z][a-zA-Z0-9]*)*\):";
+const HEAD_DEC_FUN: &str = r"(?m)def\s([a-zA-Z][a-zA-Z_-]*)\(([a-zA-Z][a-zA-Z0-9]*),?([a-zA-Z][a-zA-Z0-9]*)*\):";
 
 // declared function with body
-const DEC_FUN: &str = r"def\s[a-zA-Z][a-zA-Z_-]*\(.*\):\n((\s{4,}.*\n)*)";
+const DEC_FUN: &str = r"(?m)def\s[a-zA-Z][a-zA-Z_-]*\(.*\):\n((\s{4,}.*\n)*)";
 
-// instructions
-const INSTRUCTIONS: &str = r"\s{4,}(.*)\n";
+const INSTRUCTIONS: &str = r"(?m)\s{4,}(.*)\n";
 
-// return
 const RETURN: &str = r"return .*";
+
+const MAIN: &str = r"(?m)^\S{4,}.*$";
 
 #[derive(Debug)]
 struct Data {
@@ -101,6 +101,25 @@ impl Code {
         instructions
     }
 
+    fn get_main(py_code: &str) -> Function {
+        let re = Regex::new(MAIN).unwrap();
+        let caps = re.captures_iter(py_code);
+        let mut body: Vec<Instruction> = Vec::new();
+
+        for cap in caps {
+            let content = cap.get(0).unwrap().as_str().to_string();
+            body.push(
+                Instruction { content }
+            );
+        }
+        Function {
+            name: "main".to_string(),
+            type_: "void".to_string(),
+            params: Vec::new(),
+            body
+        }
+    }
+
     fn py2code(py_code: &str) -> Code {
         let re = Regex::new(DEC_FUN).unwrap();
         let caps = re.captures_iter(py_code);
@@ -115,6 +134,10 @@ impl Code {
                 Function { name, type_, params, body }
             );
         }
+
+        let main: Function = Self::get_main(py_code);
+        code.functions.push(main);
+
         code
     }
 
