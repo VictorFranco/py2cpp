@@ -1,4 +1,5 @@
 use regex::Regex;
+use std::collections::HashMap;
 
 // head of declared function
 const HEAD_DEC_FUN: &str = r"(?m)def\s([a-zA-Z][a-zA-Z_-]*)\(([a-zA-Z][a-zA-Z0-9]*),?([a-zA-Z][a-zA-Z0-9]*)*\):";
@@ -11,6 +12,10 @@ const INSTRUCTIONS: &str = r"(?m)\s{4,}(.*)\n";
 const RETURN: &str = r"return .*";
 
 const MAIN: &str = r"(?m)^\S{4,}.*$";
+
+const PRINT: &str = r##"^print\((.*)\)[^"]*$"##;
+
+const MESSAGES: &str = r##"("[ a-zA-Z0-9]+"|[a-zA-Z][a-zA-Z0-9]+),?"##;
 
 #[derive(Debug)]
 struct Data {
@@ -31,13 +36,11 @@ struct Function {
     body: Vec<Instruction>
 }
 
-#[allow(unused)]
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 struct Library {
     name: String
 }
 
-#[allow(unused)]
 #[derive(Debug)]
 struct Code {
     libraries: Vec<Library>,
@@ -86,6 +89,45 @@ impl Code {
         }
     }
 
+    fn add_lib<'a>(dic_of_libs: &mut HashMap<&'a str, Vec<Library>>, keyword: &'a str, names: &[&str]) {
+        let mut libraries = Vec::new();
+        for name in names.iter() {
+            let name = name.to_string();
+            libraries.push( Library { name } )
+        }
+        dic_of_libs.insert(
+            keyword, libraries
+        );
+    }
+
+    fn transpile_code(code: &mut Code) {
+        let mut dic_of_libs: HashMap<&str, Vec<Library>> = HashMap::new();
+        Self::add_lib(&mut dic_of_libs, "cout" , &["iostream"]);
+
+        let re_print = Regex::new(PRINT).unwrap();
+        let re_msgs = Regex::new(MESSAGES).unwrap();
+
+        for fun in code.functions.iter_mut() {
+            for instruction in fun.body.iter_mut() {
+                let cap_print = re_print.captures(&instruction.content);
+                match cap_print {
+                    Some(data) => {
+                        let print = data.get(1).unwrap().as_str().to_string();
+                        let caps_msgs = re_msgs.captures_iter(&print);
+                        let mut content = format!("std::cout << ");
+                        for cap in caps_msgs {
+                            let msg = cap.get(1).unwrap().as_str().to_string();
+                            content = format!("{}{} << ", content, msg);
+                        }
+                        instruction.content = format!("{}std::endl;", content);
+                        code.libraries.append(&mut dic_of_libs.get("cout").unwrap().clone());
+                    },
+                    None => {}
+                }
+            }
+        }
+    }
+
     fn get_body(cap: &regex::Captures) -> Vec<Instruction> {
         let body = cap.get(1).unwrap().as_str();        // extract function body
         let re = Regex::new(INSTRUCTIONS).unwrap();
@@ -112,9 +154,14 @@ impl Code {
                 Instruction { content }
             );
         }
+
+        body.push(
+            Instruction { content: "return 0".to_string() }
+        );
+
         Function {
             name: "main".to_string(),
-            type_: "void".to_string(),
+            type_: "int".to_string(),
             params: Vec::new(),
             body
         }
@@ -138,6 +185,9 @@ impl Code {
         let main: Function = Self::get_main(py_code);
         code.functions.push(main);
 
+        Self::transpile_code(&mut code);
+        code.libraries.dedup();         // remove duplicate libraries
+
         code
     }
 
@@ -160,7 +210,12 @@ impl Code {
     }
 
     fn code2cpp(self: Code) -> String {
+        // generate libraries
         let mut result = String::new();
+        for library in self.libraries.iter() {
+            result = format!("#include <{}>\n\n", library.name);
+        }
+        // generate functions
         for function in self.functions.iter() {
             result = format!("{}{}\n", result, Self::fun2cpp(function));
         }
