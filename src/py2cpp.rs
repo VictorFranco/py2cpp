@@ -9,7 +9,7 @@ const DEC_FUN: &str = r"(?m)def\s[a-zA-Z][a-zA-Z_-]*\(.*\):\n((\s{4,}.*\n)*)";
 
 const INSTRUCTIONS: &str = r"(?m)\s{4,}(.*)\n";
 
-const RETURN: &str = r"return .*";
+const RETURN: &str = r"return (.*)";
 
 const MAIN: &str = r"(?m)^\S{4,}.*$";
 
@@ -106,6 +106,7 @@ impl Code {
 
         let re_print = Regex::new(PRINT).unwrap();
         let re_msgs = Regex::new(MESSAGES).unwrap();
+        let re_return = Regex::new(RETURN).unwrap();
 
         for fun in code.functions.iter_mut() {
             for instruction in fun.body.iter_mut() {
@@ -121,6 +122,14 @@ impl Code {
                         }
                         instruction.content = format!("{}std::endl;", content);
                         code.libraries.append(&mut dic_of_libs.get("cout").unwrap().clone());
+                    },
+                    None => {}
+                }
+                let cap_return = re_return.captures(&instruction.content);
+                match cap_return {
+                    Some(data) => {
+                        let value = data.get(1).unwrap().as_str().to_string();
+                        instruction.content = format!("return {};", value);
                     },
                     None => {}
                 }
@@ -203,7 +212,7 @@ impl Code {
         // generate function body
         let mut body = String::new();
         for instruction in &function.body {
-            body = format!("{}{}\n", body, instruction.content);
+            body = format!("{}    {}\n", body, instruction.content);
         }
         result = format!("{}) {{\n{}}}\n", result, body);
         result
