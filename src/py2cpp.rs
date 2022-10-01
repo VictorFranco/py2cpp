@@ -2,10 +2,12 @@ use regex::Regex;
 use std::collections::HashMap;
 
 // head of declared function
-const HEAD_DEC_FUN: &str = r"(?m)def\s([a-zA-Z][a-zA-Z_-]*)\(([a-zA-Z][a-zA-Z0-9]*),?([a-zA-Z][a-zA-Z0-9]*)*\):";
+const HEAD_DEC_FUN: &str = r"(?m)def\s([a-zA-Z][a-zA-Z_-]*)\(((([a-zA-Z][a-zA-Z0-9]*),?)*)\):";
 
 // declared function with body
 const DEC_FUN: &str = r"(?m)def\s[a-zA-Z][a-zA-Z_-]*\(.*\):\n((\s{4,}.*\n)*)";
+
+const PARAMS: &str = r"[a-zA-Z][a-zA-Z0-9]*";
 
 const INSTRUCTIONS: &str = r"(?m)\s{4,}(.*)\n";
 
@@ -60,19 +62,20 @@ impl Code {
         let dec_fun = cap.get(0).unwrap().as_str();
         let re = Regex::new(HEAD_DEC_FUN).unwrap();
         let cap = re.captures(dec_fun).unwrap();
-        let name = cap.get(1).unwrap().as_str().to_string();
+        let name = cap.get(1).unwrap().as_str().to_string();    // get function name
+
+        let params = cap.get(2).unwrap().as_str();
+        let re = Regex::new(PARAMS).unwrap();
+        let caps = re.captures_iter(&params);
         let mut params = Vec::new();
 
-        for i in 2..cap.len() {
-            match cap.get(i) {
-                Some(data) => params.push(
-                    Data {
-                        name: data.as_str().to_string(),
-                        type_: "undefined".to_string()
-                    }
-                ),
-                None => {}
-            }
+        for cap in caps {
+            let name = cap.get(0).unwrap().as_str().to_string();
+            let type_ = "undefined".to_string();
+
+            params.push(
+                Data { name, type_ }                            // get function params
+            );
         }
         (name, params)
     }
@@ -93,11 +96,11 @@ impl Code {
         let mut libraries = Vec::new();
         for name in names.iter() {
             let name = name.to_string();
-            libraries.push( Library { name } )
+            libraries.push(
+                Library { name }
+            );
         }
-        dic_of_libs.insert(
-            keyword, libraries
-        );
+        dic_of_libs.insert( keyword, libraries );
     }
 
     fn transpile_code(code: &mut Code) {
@@ -113,11 +116,11 @@ impl Code {
                 let cap_print = re_print.captures(&instruction.content);
                 match cap_print {
                     Some(data) => {
-                        let print = data.get(1).unwrap().as_str().to_string();
+                        let print = data.get(1).unwrap().as_str();
                         let caps_msgs = re_msgs.captures_iter(&print);
                         let mut content = format!("std::cout << ");
                         for cap in caps_msgs {
-                            let msg = cap.get(1).unwrap().as_str().to_string();
+                            let msg = cap.get(1).unwrap().as_str();
                             content = format!("{}{} << ", content, msg);
                         }
                         instruction.content = format!("{}std::endl;", content);
@@ -128,7 +131,7 @@ impl Code {
                 let cap_return = re_return.captures(&instruction.content);
                 match cap_return {
                     Some(data) => {
-                        let value = data.get(1).unwrap().as_str().to_string();
+                        let value = data.get(1).unwrap().as_str();
                         instruction.content = format!("return {};", value);
                     },
                     None => {}
