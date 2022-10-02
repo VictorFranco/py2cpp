@@ -19,10 +19,18 @@ const PRINT: &str = r##"^print\((.*)\)[^"]*$"##;
 
 const MESSAGES: &str = r##"("[ a-zA-Z0-9]+"|[a-zA-Z][a-zA-Z0-9]+),?"##;
 
+#[derive(Debug, PartialEq, Eq, Hash)]
+enum Type {
+    Int,
+    String,
+    Void,
+    Undefined
+}
+
 #[derive(Debug)]
-struct Data {
-    name: String,
-    type_: String
+struct Param {
+    type_: Type,
+    name:  String
 }
 
 #[derive(Debug)]
@@ -32,9 +40,9 @@ struct Instruction {
 
 #[derive(Debug)]
 struct Function {
+    type_: Type,
     name: String,
-    type_: String,
-    params: Vec<Data>,
+    params: Vec<Param>,
     body: Vec<Instruction>
 }
 
@@ -58,7 +66,7 @@ impl Code {
         }
     }
 
-    fn get_header(cap: &regex::Captures) -> (String, Vec<Data>) {
+    fn get_header(cap: &regex::Captures) -> (String, Vec<Param>) {
         let dec_fun = cap.get(0).unwrap().as_str();
         let re = Regex::new(HEAD_DEC_FUN).unwrap();
         let cap = re.captures(dec_fun).unwrap();
@@ -70,25 +78,25 @@ impl Code {
         let mut params = Vec::new();
 
         for cap in caps {
+            let type_ = Type::Undefined;
             let name = cap.get(0).unwrap().as_str().to_string();
-            let type_ = "undefined".to_string();
 
             params.push(
-                Data { name, type_ }                            // get function params
+                Param { type_, name }                           // get function params
             );
         }
         (name, params)
     }
 
-    fn get_return_type(cap: &regex::Captures) -> String {
+    fn get_return_type(cap: &regex::Captures) -> Type {
         let dec_fun = cap.get(0).unwrap().as_str();
         let re = Regex::new(RETURN).unwrap();
 
         if !re.is_match(dec_fun) {      // if the function has no return statement
-            return "void".to_string();  // then it is void type
+            return Type::Void;          // then it is void type
         }
         else {
-            return "undefined".to_string();
+            return Type::Undefined
         }
     }
 
@@ -119,10 +127,12 @@ impl Code {
                         let print = data.get(1).unwrap().as_str();
                         let caps_msgs = re_msgs.captures_iter(&print);
                         let mut content = format!("std::cout << ");
+
                         for cap in caps_msgs {
                             let msg = cap.get(1).unwrap().as_str();
                             content = format!("{}{} << ", content, msg);
                         }
+
                         instruction.content = format!("{}std::endl;", content);
                         code.libraries.append(&mut dic_of_libs.get("cout").unwrap().clone());
                     },
@@ -172,8 +182,8 @@ impl Code {
         );
 
         Function {
+            type_: Type::Int,
             name: "main".to_string(),
-            type_: "int".to_string(),
             params: Vec::new(),
             body
         }
@@ -185,12 +195,12 @@ impl Code {
         let mut code = Self::create_code();
 
         for cap in caps {
-            let type_: String = Self::get_return_type(&cap);   // get function type
-            let body: Vec<Instruction> = Self::get_body(&cap); // get function body
-            let (name, params): (String, Vec<Data>) = Self::get_header(&cap);
+            let type_: Type = Self::get_return_type(&cap);      // get function type
+            let body: Vec<Instruction> = Self::get_body(&cap);  // get function body
+            let (name, params): (String, Vec<Param>) = Self::get_header(&cap);
 
             code.functions.push(
-                Function { name, type_, params, body }
+                Function { type_, name, params, body }
             );
         }
 
@@ -204,14 +214,24 @@ impl Code {
     }
 
     fn fun2cpp(function: &Function) -> String {
+        let dic_types = HashMap::from([
+             (Type::Int, "int"),
+             (Type::String, "string"),
+             (Type::Void, "void"),
+             (Type::Undefined, "undefined"),
+        ]);
+
         // generate function header
-        let mut result = format!("{} {}(", function.type_, function.name);
+        let type_ = dic_types.get(&function.type_).unwrap();
+        let mut result = format!("{} {}(", type_, function.name);
         for (index, param) in function.params.iter().enumerate() {
             if index > 0 {
                 result.push_str(", ");
             }
-            result = format!("{}{} {}", result, param.type_, param.name);
+            let type_ = dic_types.get(&param.type_).unwrap();
+            result = format!("{}{} {}", result, type_, param.name);
         }
+
         // generate function body
         let mut body = String::new();
         for instruction in &function.body {
