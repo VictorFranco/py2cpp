@@ -21,6 +21,8 @@ const PRINT: &str = r##"^print\((.*)\)[^"]*$"##;
 
 const MESSAGES: &str = r##"("[ a-zA-Z0-9]+"|[a-zA-Z][a-zA-Z0-9]+),?"##;
 
+const INTEGER: &str = r"(?m)^([a-zA-Z][a-zA-Z0-9]*)\s*=\s*[+-]?\s*(\d+)$";
+
 #[derive(Debug, PartialEq, Eq, Hash)]
 enum Type {
     Int,
@@ -133,6 +135,7 @@ impl Code {
         let re_print = Regex::new(PRINT).unwrap();
         let re_msgs = Regex::new(MESSAGES).unwrap();
         let re_return = Regex::new(RETURN).unwrap();
+        let re_int = Regex::new(INTEGER).unwrap();
 
         for cap in caps {
             let content = cap.get(1).unwrap().as_str().to_string();
@@ -161,11 +164,22 @@ impl Code {
                 },
                 None => {}
             }
+            let cap_int = re_int.captures(&content);
+            match cap_int {
+                Some(data) => {
+                    let type_ = Type::Int;
+                    let name = data.get(1).unwrap().as_str().to_string();
+                    let value = data.get(2).unwrap().as_str().to_string();
+                    let instruction = Instruction::CreateVar { type_, name, value };
+                    instructions.push(instruction);
+                },
+                None => {}
+            }
             let cap_return = re_return.captures(&content);
             match cap_return {
                 Some(data) => {
-                    let value = data.get(1).unwrap().as_str();
-                    let instruction = Instruction::Return(value.to_string());
+                    let value = data.get(1).unwrap().as_str().to_string();
+                    let instruction = Instruction::Return(value);
                     instructions.push(instruction);
                 },
                 None => {}
@@ -264,7 +278,6 @@ impl Code {
         let mut body = String::new();
         for instruction in &function.body {
             let result = match instruction {
-                Instruction::Return(value) => format!("return {};", value),
                 Instruction::CallFun { name, arguments } => {
                     match name.as_str() {
                         "print" => {
@@ -277,6 +290,13 @@ impl Code {
                         _ => String::new()
                     }
                 },
+                Instruction::CreateVar { type_, name, value } => {
+                    match type_ {
+                        Type::Int => format!("int {} = {};", name, value),
+                        _ => String::new()
+                    }
+                }
+                Instruction::Return(value) => format!("return {};", value),
                 _ => String::new()
             };
             body = format!("{}    {}\n", body, result);
