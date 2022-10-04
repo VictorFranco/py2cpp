@@ -9,7 +9,9 @@ const DEC_FUN: &str = r"(?m)def\s[a-zA-Z][a-zA-Z_-]*\(.*\):\n((\s{4,}.*\n)*)";
 
 const PARAMS: &str = r"[a-zA-Z][a-zA-Z0-9]*";
 
-const INSTRUCTIONS: &str = r"(?m)\s{4,}(.*)\n";
+const INSTRUCTIONS: &str = r"(?m)(.*)\n";
+
+const SHIFT_LEFT: &str = r"(?m)\s{4,}(.*)\n";
 
 const RETURN: &str = r"return (.*)";
 
@@ -30,12 +32,23 @@ enum Type {
 #[derive(Debug)]
 struct Param {
     type_: Type,
-    name:  String
+    name: String
 }
 
+#[allow(unused)]
 #[derive(Debug)]
-struct Instruction {
+struct Argument {
+    type_: Type,
     content: String
+}
+
+#[allow(unused)]
+#[derive(Debug)]
+enum Instruction {
+    CreateVar { type_: Type, name: String, value: String },
+    CallFun { name: String, arguments: Vec<Argument> },
+    Loop { start: String, end: String, content: Vec<Instruction> },
+    Return (String)
 }
 
 #[derive(Debug)]
@@ -66,10 +79,9 @@ impl Code {
         }
     }
 
-    fn get_header(cap: &regex::Captures) -> (String, Vec<Param>) {
-        let dec_fun = cap.get(0).unwrap().as_str();
+    fn get_header_info(header: &str) -> (String, Vec<Param>) {
         let re = Regex::new(HEAD_DEC_FUN).unwrap();
-        let cap = re.captures(dec_fun).unwrap();
+        let cap = re.captures(header).unwrap();
         let name = cap.get(1).unwrap().as_str().to_string();    // get function name
 
         let params = cap.get(2).unwrap().as_str();
@@ -88,11 +100,10 @@ impl Code {
         (name, params)
     }
 
-    fn get_return_type(cap: &regex::Captures) -> Type {
-        let dec_fun = cap.get(0).unwrap().as_str();
+    fn get_return_type(header: &str) -> Type {
         let re = Regex::new(RETURN).unwrap();
 
-        if !re.is_match(dec_fun) {      // if the function has no return statement
+        if !re.is_match(header) {      // if the function has no return statement
             return Type::Void;          // then it is void type
         }
         else {
@@ -111,74 +122,75 @@ impl Code {
         dic_of_libs.insert( keyword, libraries );
     }
 
-    fn transpile_code(code: &mut Code) {
+    fn get_instructions(self: &mut Code, body: String) -> Vec<Instruction> {
         let mut dic_of_libs: HashMap<&str, Vec<Library>> = HashMap::new();
         Self::add_lib(&mut dic_of_libs, "cout" , &["iostream"]);
+
+        let re = Regex::new(INSTRUCTIONS).unwrap();
+        let caps = re.captures_iter(&body);
+        let mut instructions: Vec<Instruction> = Vec::new();
 
         let re_print = Regex::new(PRINT).unwrap();
         let re_msgs = Regex::new(MESSAGES).unwrap();
         let re_return = Regex::new(RETURN).unwrap();
 
-        for fun in code.functions.iter_mut() {
-            for instruction in fun.body.iter_mut() {
-                let cap_print = re_print.captures(&instruction.content);
-                match cap_print {
-                    Some(data) => {
-                        let print = data.get(1).unwrap().as_str();
-                        let caps_msgs = re_msgs.captures_iter(&print);
-                        let mut content = format!("std::cout << ");
-
-                        for cap in caps_msgs {
-                            let msg = cap.get(1).unwrap().as_str();
-                            content = format!("{}{} << ", content, msg);
-                        }
-
-                        instruction.content = format!("{}std::endl;", content);
-                        code.libraries.append(&mut dic_of_libs.get("cout").unwrap().clone());
-                    },
-                    None => {}
-                }
-                let cap_return = re_return.captures(&instruction.content);
-                match cap_return {
-                    Some(data) => {
-                        let value = data.get(1).unwrap().as_str();
-                        instruction.content = format!("return {};", value);
-                    },
-                    None => {}
-                }
-            }
-        }
-    }
-
-    fn get_body(cap: &regex::Captures) -> Vec<Instruction> {
-        let body = cap.get(1).unwrap().as_str();        // extract function body
-        let re = Regex::new(INSTRUCTIONS).unwrap();
-        let caps = re.captures_iter(body);
-        let mut instructions: Vec<Instruction> = Vec::new();
-
         for cap in caps {
             let content = cap.get(1).unwrap().as_str().to_string();
-            instructions.push(
-                Instruction { content }                 // save each instruction
-            );
+            let cap_print = re_print.captures(&content);
+            match cap_print {
+                Some(data) => {
+                    let print = data.get(1).unwrap().as_str();
+                    let caps_msgs = re_msgs.captures_iter(&print);
+                    let name = "print".to_string();
+                    let mut arguments = Vec::new();
+
+                    for cap in caps_msgs {
+                        let content = cap.get(1).unwrap().as_str().to_string();
+                        arguments.push(
+                            Argument {
+                                type_: Type::Undefined,
+                                content
+                            }
+                        );
+
+                    }
+
+                    let instruction = Instruction::CallFun { name, arguments };
+                    instructions.push(instruction);
+                    self.libraries.append(&mut dic_of_libs.get("cout").unwrap().clone());
+                },
+                None => {}
+            }
+            let cap_return = re_return.captures(&content);
+            match cap_return {
+                Some(data) => {
+                    let value = data.get(1).unwrap().as_str();
+                    let instruction = Instruction::Return(value.to_string());
+                    instructions.push(instruction);
+                },
+                None => {}
+            }
         }
         instructions
     }
 
-    fn get_main(py_code: &str) -> Function {
+    fn get_main(self: &mut Code, py_code: &str) -> Function {
+        let mut dic_of_libs: HashMap<&str, Vec<Library>> = HashMap::new();
+        Self::add_lib(&mut dic_of_libs, "cout" , &["iostream"]);
+
         let re = Regex::new(MAIN).unwrap();
         let caps = re.captures_iter(py_code);
-        let mut body: Vec<Instruction> = Vec::new();
+        let mut body = String::new();
 
         for cap in caps {
             let content = cap.get(0).unwrap().as_str().to_string();
-            body.push(
-                Instruction { content }
-            );
+            body = format!("{}{}\n", body, content);
         }
 
+        let mut body: Vec<Instruction> = Self::get_instructions(self, body);
+
         body.push(
-            Instruction { content: "return 0".to_string() }
+            Instruction::Return("0".to_string())
         );
 
         Function {
@@ -189,25 +201,41 @@ impl Code {
         }
     }
 
+    fn shift_code_left(body: &str) -> String {
+        let re = Regex::new(SHIFT_LEFT).unwrap();
+        let caps = re.captures_iter(&body);
+        let mut body = String::new();
+
+        for cap in caps {
+            let content = cap.get(1).unwrap().as_str();
+            body = format!("{}{}\n", body, content);
+        }
+
+        body
+    }
+
     fn py2code(py_code: &str) -> Code {
         let re = Regex::new(DEC_FUN).unwrap();
         let caps = re.captures_iter(py_code);
         let mut code = Self::create_code();
 
         for cap in caps {
-            let type_: Type = Self::get_return_type(&cap);      // get function type
-            let body: Vec<Instruction> = Self::get_body(&cap);  // get function body
-            let (name, params): (String, Vec<Param>) = Self::get_header(&cap);
+            let body = cap.get(1).unwrap().as_str();
+            let body = Self::shift_code_left(body);
+            let header = cap.get(0).unwrap().as_str();
+
+            let type_: Type = Self::get_return_type(header);
+            let body: Vec<Instruction> = Self::get_instructions(&mut code, body);
+            let (name, params): (String, Vec<Param>) = Self::get_header_info(header);
 
             code.functions.push(
                 Function { type_, name, params, body }
             );
         }
 
-        let main: Function = Self::get_main(py_code);
+        let main: Function = Self::get_main(&mut code, &py_code);
         code.functions.push(main);
 
-        Self::transpile_code(&mut code);
         code.libraries.dedup();         // remove duplicate libraries
 
         code
@@ -223,22 +251,37 @@ impl Code {
 
         // generate function header
         let type_ = dic_types.get(&function.type_).unwrap();
-        let mut result = format!("{} {}(", type_, function.name);
+        let mut header = format!("{} {}(", type_, function.name);
         for (index, param) in function.params.iter().enumerate() {
             if index > 0 {
-                result.push_str(", ");
+                header.push_str(", ");
             }
             let type_ = dic_types.get(&param.type_).unwrap();
-            result = format!("{}{} {}", result, type_, param.name);
+            header = format!("{}{} {}", header, type_, param.name);
         }
 
         // generate function body
         let mut body = String::new();
         for instruction in &function.body {
-            body = format!("{}    {}\n", body, instruction.content);
+            let result = match instruction {
+                Instruction::Return(value) => format!("return {};", value),
+                Instruction::CallFun { name, arguments } => {
+                    match name.as_str() {
+                        "print" => {
+                            let mut result = format!("std::cout << ");
+                            for argument in arguments {
+                                result = format!("{}{} << ", result, argument.content);
+                            }
+                            format!("{}std::endl;", result)
+                        },
+                        _ => String::new()
+                    }
+                },
+                _ => String::new()
+            };
+            body = format!("{}    {}\n", body, result);
         }
-        result = format!("{}) {{\n{}}}\n", result, body);
-        result
+        format!("{}) {{\n{}}}\n", header, body)
     }
 
     fn code2cpp(self: Code) -> String {
