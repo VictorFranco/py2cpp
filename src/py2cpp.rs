@@ -268,11 +268,11 @@ impl Code {
                 Instruction::CallFun { name, arguments } => {
                     match name.as_str() {
                         "print" => {
-                            let mut result = format!("std::cout << ");
+                            let mut result = format!("cout << ");
                             for argument in arguments {
                                 result = format!("{}{} << ", result, argument.content);
                             }
-                            format!("{}std::endl;", result)
+                            format!("{}endl;", result)
                         },
                         _ => String::new()
                     }
@@ -287,8 +287,17 @@ impl Code {
     fn code2cpp(self: Code) -> String {
         // generate libraries
         let mut result = String::new();
+        let mut cpp_std = false;
         for library in self.libraries.iter() {
-            result = format!("#include <{}>\n\n", library.name);
+            result = format!("{}#include <{}>\n", result, library.name);
+            if library.name == "iostream" {
+                cpp_std = true;
+            }
+        }
+        result.push('\n');
+        // add namespace
+        if cpp_std {
+            result = format!("{}using namespace std;\n\n", result);
         }
         // generate functions
         for function in self.functions.iter() {
