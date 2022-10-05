@@ -1,5 +1,6 @@
 use regex::Regex;
 use std::collections::HashMap;
+use crate::instructions::print;
 
 // head of declared function
 const HEAD_DEC_FUN: &str = r"(?m)def\s([a-zA-Z][a-zA-Z_-]*)\(((([a-zA-Z][a-zA-Z0-9]*),?)*)\):";
@@ -17,14 +18,10 @@ const RETURN: &str = r"return (.*)";
 
 const MAIN: &str = r"(?m)^\S{4,}.*$";
 
-const PRINT: &str = r##"^print\((.*)\)[^"]*$"##;
-
-const MESSAGES: &str = r##"("[ a-zA-Z0-9]+"|[a-zA-Z][a-zA-Z0-9]+),?"##;
-
 const INTEGER: &str = r"(?m)^([a-zA-Z][a-zA-Z0-9]*)\s*=\s*[+-]?\s*(\d+)$";
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-enum Type {
+pub enum Type {
     Int,
     String,
     Void,
@@ -37,16 +34,15 @@ struct Param {
     name: String
 }
 
-#[allow(unused)]
 #[derive(Debug)]
-struct Argument {
-    type_: Type,
-    content: String
+pub struct Argument {
+    pub type_: Type,
+    pub content: String
 }
 
 #[allow(unused)]
 #[derive(Debug)]
-enum Instruction {
+pub enum Instruction {
     CreateVar { type_: Type, name: String, value: String },
     CallFun { name: String, arguments: Vec<Argument> },
     Loop { start: String, end: String, content: Vec<Instruction> },
@@ -132,39 +128,20 @@ impl Code {
         let caps = re.captures_iter(&body);
         let mut instructions: Vec<Instruction> = Vec::new();
 
-        let re_print = Regex::new(PRINT).unwrap();
-        let re_msgs = Regex::new(MESSAGES).unwrap();
         let re_return = Regex::new(RETURN).unwrap();
         let re_int = Regex::new(INTEGER).unwrap();
 
         for cap in caps {
-            let content = cap.get(1).unwrap().as_str().to_string();
-            let cap_print = re_print.captures(&content);
-            match cap_print {
-                Some(data) => {
-                    let print = data.get(1).unwrap().as_str();
-                    let caps_msgs = re_msgs.captures_iter(&print);
-                    let name = "print".to_string();
-                    let mut arguments = Vec::new();
-
-                    for cap in caps_msgs {
-                        let content = cap.get(1).unwrap().as_str().to_string();
-                        arguments.push(
-                            Argument {
-                                type_: Type::Undefined,
-                                content
-                            }
-                        );
-
-                    }
-
-                    let instruction = Instruction::CallFun { name, arguments };
+            let content = cap.get(1).unwrap().as_str();
+            let opt_instruc = print::py2code(content);
+            match opt_instruc {
+                Some(instruction) => {
                     instructions.push(instruction);
                     self.libraries.append(&mut dic_of_libs.get("cout").unwrap().clone());
-                },
+                }
                 None => {}
             }
-            let cap_int = re_int.captures(&content);
+            let cap_int = re_int.captures(content);
             match cap_int {
                 Some(data) => {
                     let type_ = Type::Int;
@@ -175,7 +152,7 @@ impl Code {
                 },
                 None => {}
             }
-            let cap_return = re_return.captures(&content);
+            let cap_return = re_return.captures(content);
             match cap_return {
                 Some(data) => {
                     let value = data.get(1).unwrap().as_str().to_string();
@@ -197,7 +174,7 @@ impl Code {
         let mut body = String::new();
 
         for cap in caps {
-            let content = cap.get(0).unwrap().as_str().to_string();
+            let content = cap.get(0).unwrap().as_str();
             body = format!("{}{}\n", body, content);
         }
 
@@ -247,7 +224,7 @@ impl Code {
             );
         }
 
-        let main: Function = Self::get_main(&mut code, &py_code);
+        let main: Function = Self::get_main(&mut code, py_code);
         code.functions.push(main);
 
         code.libraries.dedup();         // remove duplicate libraries
@@ -279,16 +256,7 @@ impl Code {
         for instruction in &function.body {
             let result = match instruction {
                 Instruction::CallFun { name, arguments } => {
-                    match name.as_str() {
-                        "print" => {
-                            let mut result = format!("cout << ");
-                            for argument in arguments {
-                                result = format!("{}{} << ", result, argument.content);
-                            }
-                            format!("{}endl;", result)
-                        },
-                        _ => String::new()
-                    }
+                    print::code2cpp(name, arguments)
                 },
                 Instruction::CreateVar { type_, name, value } => {
                     match type_ {
