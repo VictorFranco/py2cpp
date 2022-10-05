@@ -1,6 +1,6 @@
 use regex::Regex;
 use std::collections::HashMap;
-use crate::instructions::print;
+use crate::instructions::{print, declare};
 
 // head of declared function
 const HEAD_DEC_FUN: &str = r"(?m)def\s([a-zA-Z][a-zA-Z_-]*)\(((([a-zA-Z][a-zA-Z0-9]*),?)*)\):";
@@ -17,8 +17,6 @@ const SHIFT_LEFT: &str = r"(?m)\s{4,}(.*)\n";
 const RETURN: &str = r"return (.*)";
 
 const MAIN: &str = r"(?m)^\S{4,}.*$";
-
-const INTEGER: &str = r"(?m)^([a-zA-Z][a-zA-Z0-9]*)\s*=\s*[+-]?\s*(\d+)$";
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum Type {
@@ -129,7 +127,6 @@ impl Code {
         let mut instructions: Vec<Instruction> = Vec::new();
 
         let re_return = Regex::new(RETURN).unwrap();
-        let re_int = Regex::new(INTEGER).unwrap();
 
         for cap in caps {
             let content = cap.get(1).unwrap().as_str();
@@ -141,15 +138,9 @@ impl Code {
                 }
                 None => {}
             }
-            let cap_int = re_int.captures(content);
-            match cap_int {
-                Some(data) => {
-                    let type_ = Type::Int;
-                    let name = data.get(1).unwrap().as_str().to_string();
-                    let value = data.get(2).unwrap().as_str().to_string();
-                    let instruction = Instruction::CreateVar { type_, name, value };
-                    instructions.push(instruction);
-                },
+            let opt_instruc = declare::py2code(content);
+            match opt_instruc {
+                Some(instruction) => instructions.push(instruction),
                 None => {}
             }
             let cap_return = re_return.captures(content);
@@ -259,10 +250,7 @@ impl Code {
                     print::code2cpp(name, arguments)
                 },
                 Instruction::CreateVar { type_, name, value } => {
-                    match type_ {
-                        Type::Int => format!("int {} = {};", name, value),
-                        _ => String::new()
-                    }
+                    declare::code2cpp(type_, name, value)
                 }
                 Instruction::Return(value) => format!("return {};", value),
                 _ => String::new()
