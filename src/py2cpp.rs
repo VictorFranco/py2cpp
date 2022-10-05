@@ -1,6 +1,6 @@
 use regex::Regex;
 use std::collections::HashMap;
-use crate::instructions::{print, declare};
+use crate::instructions::{print, declare, r#return};
 
 // head of declared function
 const HEAD_DEC_FUN: &str = r"(?m)def\s([a-zA-Z][a-zA-Z_-]*)\(((([a-zA-Z][a-zA-Z0-9]*),?)*)\):";
@@ -126,8 +126,6 @@ impl Code {
         let caps = re.captures_iter(&body);
         let mut instructions: Vec<Instruction> = Vec::new();
 
-        let re_return = Regex::new(RETURN).unwrap();
-
         for cap in caps {
             let content = cap.get(1).unwrap().as_str();
             let opt_instruc = print::py2code(content);
@@ -143,13 +141,9 @@ impl Code {
                 Some(instruction) => instructions.push(instruction),
                 None => {}
             }
-            let cap_return = re_return.captures(content);
-            match cap_return {
-                Some(data) => {
-                    let value = data.get(1).unwrap().as_str().to_string();
-                    let instruction = Instruction::Return(value);
-                    instructions.push(instruction);
-                },
+            let opt_instruc = r#return::py2code(content);
+            match opt_instruc {
+                Some(instruction) => instructions.push(instruction),
                 None => {}
             }
         }
@@ -252,7 +246,7 @@ impl Code {
                 Instruction::CreateVar { type_, name, value } => {
                     declare::code2cpp(type_, name, value)
                 }
-                Instruction::Return(value) => format!("return {};", value),
+                Instruction::Return(value) => r#return::code2cpp(value),
                 _ => String::new()
             };
             body = format!("{}    {}\n", body, result);
