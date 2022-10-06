@@ -4,7 +4,7 @@ use crate::py2cpp::{Argument, Instruction, Type, Library, get_libraries};
 const PRINT: &str = r##"^print\((.*)\)[^"]*$"##;
 const MESSAGES: &str = r##"("[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]+),?"##;
 
-pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(content: &str, newline: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let re_print = Regex::new(PRINT).unwrap();
     let re_msgs = Regex::new(MESSAGES).unwrap();
     let cap_print = re_print.captures(content);
@@ -27,6 +27,13 @@ pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
 
             }
 
+            arguments.push(
+                Argument {
+                    type_: Type::Undefined,
+                    content: newline.to_string()
+                }
+            );
+
             let instruction = Instruction::CallFun { name, arguments };
             let libraries = get_libraries(&["iostream"]);
             Some((vec![instruction], libraries))
@@ -38,11 +45,15 @@ pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
 pub fn code2cpp(name: &String, arguments: &Vec<Argument>) -> String {
     match name.as_str() {
         "print" => {
-            let mut result = format!("cout << ");
-            for argument in arguments {
-                result = format!("{}{} << ", result, argument.content);
+            let mut result = format!("cout");
+            let newline = &arguments.last().unwrap().content;
+            for index in 0..arguments.len() - 1  {
+                result = format!("{} << {}", result, arguments.get(index).unwrap().content);
             }
-            format!("{}endl;", result)
+            if newline == "true" {
+                result = format!("{} << endl", result);
+            }
+            format!("{};", result)
         },
         _ => String::new()
     }

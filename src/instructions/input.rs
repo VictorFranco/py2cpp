@@ -4,7 +4,7 @@ use crate::instructions::print;
 
 const INPUT: &str = r##"^([^"]*[a-zA-Z][a-zA-Z0-9]*)\s*=\s*input\((.*)\)[^"]*$"##;
 
-pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(content: &str, newline: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let re_input = Regex::new(INPUT).unwrap();
     let cap_print = re_input.captures(content);
 
@@ -13,7 +13,7 @@ pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
             // print text
             let content = data.get(2).unwrap().as_str();
             let content = format!("print({})", content);
-            let (mut instructions, mut libraries) = print::py2code(content.as_str()).unwrap();
+            let (mut instructions, mut libraries) = print::py2code(content.as_str(), newline).unwrap();
             // create string
             let name = data.get(1).unwrap().as_str().to_string();
             instructions.push(

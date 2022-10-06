@@ -126,8 +126,8 @@ impl Code {
         for cap in caps {
             let content = cap.get(1).unwrap().as_str();
             let results = [
-                print::py2code(content),
-                input::py2code(content),
+                print::py2code(content, "true"),
+                input::py2code(content, "false"),
                 declare::py2code(content),
                 r#return::py2code(content)
             ];
