@@ -1,6 +1,6 @@
 use regex::Regex;
 use std::collections::HashMap;
-use crate::instructions::{print, declare, r#return};
+use crate::instructions::{print, input, declare, r#return};
 
 // head of declared function
 const HEAD_DEC_FUN: &str = r"(?m)def\s([a-zA-Z][a-zA-Z_-]*)\(((([a-zA-Z][a-zA-Z0-9]*),?)*)\):";
@@ -55,9 +55,9 @@ struct Function {
     body: Vec<Instruction>
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Library {
-    name: String
+    pub name: String
 }
 
 pub fn get_libraries(names: &[&str]) -> Vec<Library> {
@@ -127,6 +127,7 @@ impl Code {
             let content = cap.get(1).unwrap().as_str();
             let results = [
                 print::py2code(content),
+                input::py2code(content),
                 declare::py2code(content),
                 r#return::py2code(content)
             ];
@@ -231,7 +232,8 @@ impl Code {
         for instruction in &function.body {
             let result = match instruction {
                 Instruction::CallFun { name, arguments } => {
-                    print::code2cpp(name, arguments)
+                    let options = [print::code2cpp(name, arguments), input::code2cpp(name, arguments)];
+                    format!("{}{}", options[0], options[1])
                 },
                 Instruction::CreateVar { type_, name, value } => {
                     declare::code2cpp(type_, name, value)

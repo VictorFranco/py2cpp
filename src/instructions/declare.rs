@@ -22,6 +22,7 @@ pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
 pub fn code2cpp(type_: &Type, name: &String, value: &String) -> String {
     match type_ {
         Type::Int => format!("int {} = {};", name, value),
+        Type::String => format!("string {} = {};", name, value),
         _ => String::new()
     }
 }

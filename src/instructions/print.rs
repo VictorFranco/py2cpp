@@ -2,7 +2,7 @@ use regex::Regex;
 use crate::py2cpp::{Argument, Instruction, Type, Library, get_libraries};
 
 const PRINT: &str = r##"^print\((.*)\)[^"]*$"##;
-const MESSAGES: &str = r##"("[ a-zA-Z0-9]+"|[a-zA-Z][a-zA-Z0-9]+),?"##;
+const MESSAGES: &str = r##"("[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]+),?"##;
 
 pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let re_print = Regex::new(PRINT).unwrap();
