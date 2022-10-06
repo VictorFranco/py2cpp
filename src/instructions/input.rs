@@ -17,7 +17,7 @@ pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
             // create string
             let name = data.get(1).unwrap().as_str().to_string();
             instructions.push(
-                Instruction::CreateVar { type_: Type::String, name, value: "\"\"".to_string() }
+                Instruction::CreateVar { type_: Type::String, name, value: None }
             );
             // save input into variable
             let name = "input".to_string();

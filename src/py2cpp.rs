@@ -41,7 +41,7 @@ pub struct Argument {
 #[allow(unused)]
 #[derive(Debug)]
 pub enum Instruction {
-    CreateVar { type_: Type, name: String, value: String },
+    CreateVar { type_: Type, name: String, value: Option<String> },
     CallFun { name: String, arguments: Vec<Argument> },
     Loop { start: String, end: String, content: Vec<Instruction> },
     Return (String)
@@ -233,7 +233,7 @@ impl Code {
             let result = match instruction {
                 Instruction::CallFun { name, arguments } => {
                     let options = [print::code2cpp(name, arguments), input::code2cpp(name, arguments)];
-                    format!("{}{}", options[0], options[1])
+                    options.join("")
                 },
                 Instruction::CreateVar { type_, name, value } => {
                     declare::code2cpp(type_, name, value)
@@ -252,7 +252,7 @@ impl Code {
         let mut cpp_std = false;
         for library in self.libraries.iter() {
             result = format!("{}#include <{}>\n", result, library.name);
-            if library.name == "iostream" {
+            if library.name == "iostream" || library.name == "string" {
                 cpp_std = true;
             }
         }

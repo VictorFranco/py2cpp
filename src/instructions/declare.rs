@@ -11,7 +11,7 @@ pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
         Some(data) => {
             let type_ = Type::Int;
             let name = data.get(1).unwrap().as_str().to_string();
-            let value = data.get(2).unwrap().as_str().to_string();
+            let value = Some(data.get(2).unwrap().as_str().to_string());
             let instruction = Instruction::CreateVar { type_, name, value };
             Some((vec![instruction], vec![]))
         },
@@ -19,10 +19,21 @@ pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     }
 }
 
-pub fn code2cpp(type_: &Type, name: &String, value: &String) -> String {
-    match type_ {
-        Type::Int => format!("int {} = {};", name, value),
-        Type::String => format!("string {} = {};", name, value),
-        _ => String::new()
+pub fn code2cpp(type_: &Type, name: &String, option: &Option<String>) -> String {
+    match option {
+        Some(value) => {
+            match type_ {
+                Type::Int => format!("int {} = {};", name, value),
+                Type::String => format!("string {} = {};", name, value),
+                _ => String::new()
+            }
+        },
+        None => {
+            match type_ {
+                Type::Int => format!("int {};", name),
+                Type::String => format!("string {};", name),
+                _ => String::new()
+            }
+        }
     }
 }
