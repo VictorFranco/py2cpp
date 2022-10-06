@@ -1,12 +1,10 @@
 use regex::Regex;
-use crate::py2cpp::Argument;
-use crate::py2cpp::Instruction;
-use crate::py2cpp::Type;
+use crate::py2cpp::{Argument, Instruction, Type, Library, get_libraries};
 
 const PRINT: &str = r##"^print\((.*)\)[^"]*$"##;
 const MESSAGES: &str = r##"("[ a-zA-Z0-9]+"|[a-zA-Z][a-zA-Z0-9]+),?"##;
 
-pub fn py2code(content: &str) -> Option<Instruction> {
+pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let re_print = Regex::new(PRINT).unwrap();
     let re_msgs = Regex::new(MESSAGES).unwrap();
     let cap_print = re_print.captures(content);
@@ -29,7 +27,9 @@ pub fn py2code(content: &str) -> Option<Instruction> {
 
             }
 
-            Some(Instruction::CallFun { name, arguments })
+            let instruction = Instruction::CallFun { name, arguments };
+            let libraries = get_libraries(&["iostream"]);
+            Some((vec![instruction], libraries))
         },
         None => None
     }

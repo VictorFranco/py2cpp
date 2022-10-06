@@ -12,7 +12,7 @@ const PARAMS: &str = r"[a-zA-Z][a-zA-Z0-9]*";
 
 const INSTRUCTIONS: &str = r"(?m)(.*)\n";
 
-const SHIFT_LEFT: &str = r"(?m)\s{4,}(.*)\n";
+const SHIFT_LEFT: &str = r"(?m)\s{4}(.*)\n";
 
 const RETURN: &str = r"return (.*)";
 
@@ -56,8 +56,19 @@ struct Function {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-struct Library {
+pub struct Library {
     name: String
+}
+
+pub fn get_libraries(names: &[&str]) -> Vec<Library> {
+    let mut libraries = Vec::new();
+    for name in names.iter() {
+        let name = name.to_string();
+        libraries.push(
+            Library { name }
+        );
+    }
+    libraries
 }
 
 #[derive(Debug)]
@@ -99,7 +110,7 @@ impl Code {
     fn get_return_type(header: &str) -> Type {
         let re = Regex::new(RETURN).unwrap();
 
-        if !re.is_match(header) {      // if the function has no return statement
+        if !re.is_match(header) {       // if the function has no return statement
             return Type::Void;          // then it is void type
         }
         else {
@@ -107,53 +118,32 @@ impl Code {
         }
     }
 
-    fn add_lib<'a>(dic_of_libs: &mut HashMap<&'a str, Vec<Library>>, keyword: &'a str, names: &[&str]) {
-        let mut libraries = Vec::new();
-        for name in names.iter() {
-            let name = name.to_string();
-            libraries.push(
-                Library { name }
-            );
-        }
-        dic_of_libs.insert( keyword, libraries );
-    }
-
     fn get_instructions(self: &mut Code, body: String) -> Vec<Instruction> {
-        let mut dic_of_libs: HashMap<&str, Vec<Library>> = HashMap::new();
-        Self::add_lib(&mut dic_of_libs, "cout" , &["iostream"]);
-
         let re = Regex::new(INSTRUCTIONS).unwrap();
         let caps = re.captures_iter(&body);
-        let mut instructions: Vec<Instruction> = Vec::new();
+        let mut body: Vec<Instruction> = Vec::new();
 
         for cap in caps {
             let content = cap.get(1).unwrap().as_str();
-            let opt_instruc = print::py2code(content);
-            match opt_instruc {
-                Some(instruction) => {
-                    instructions.push(instruction);
-                    self.libraries.append(&mut dic_of_libs.get("cout").unwrap().clone());
+            let results = [
+                print::py2code(content),
+                declare::py2code(content),
+                r#return::py2code(content)
+            ];
+            for result in results {
+                match result {
+                    Some((mut instructions, mut libraries)) => {
+                        body.append(&mut instructions);
+                        self.libraries.append(&mut libraries);
+                    }
+                    None => {}
                 }
-                None => {}
-            }
-            let opt_instruc = declare::py2code(content);
-            match opt_instruc {
-                Some(instruction) => instructions.push(instruction),
-                None => {}
-            }
-            let opt_instruc = r#return::py2code(content);
-            match opt_instruc {
-                Some(instruction) => instructions.push(instruction),
-                None => {}
             }
         }
-        instructions
+        body
     }
 
     fn get_main(self: &mut Code, py_code: &str) -> Function {
-        let mut dic_of_libs: HashMap<&str, Vec<Library>> = HashMap::new();
-        Self::add_lib(&mut dic_of_libs, "cout" , &["iostream"]);
-
         let re = Regex::new(MAIN).unwrap();
         let caps = re.captures_iter(py_code);
         let mut body = String::new();
