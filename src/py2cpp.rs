@@ -1,6 +1,6 @@
 use regex::Regex;
 use std::collections::HashMap;
-use crate::instructions::{print, input, declare, r#return};
+use crate::instructions::{print, input, custom_fun, declare, r#return};
 
 // head of declared function
 const HEAD_DEC_FUN: &str = r"(?m)def\s([a-zA-Z][a-zA-Z_-]*)\(((([a-zA-Z][a-zA-Z0-9]*),?)*)\):";
@@ -17,6 +17,8 @@ const SHIFT_LEFT: &str = r"(?m)\s{4}(.*)\n";
 const RETURN: &str = r"return (.*)";
 
 const MAIN: &str = r"(?m)^\S{4,}.*$";
+
+pub const NATIVE_FUNS: [&str; 2] = ["print", "input"];
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum Type {
@@ -55,7 +57,7 @@ struct Function {
     body: Vec<Instruction>
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Library {
     pub name: String
 }
@@ -72,7 +74,7 @@ pub fn get_libraries(names: &[&str]) -> Vec<Library> {
 }
 
 #[derive(Debug)]
-struct Code {
+pub struct Code {
     libraries: Vec<Library>,
     functions: Vec<Function>
 }
@@ -129,6 +131,7 @@ impl Code {
                 print::py2code(content, "true"),
                 input::py2code(content, "false"),
                 declare::py2code(content),
+                custom_fun::py2code(content),
                 r#return::py2code(content)
             ];
             for result in results {
@@ -203,6 +206,7 @@ impl Code {
         let main: Function = Self::get_main(&mut code, py_code);
         code.functions.push(main);
 
+        code.libraries.sort();
         code.libraries.dedup();         // remove duplicate libraries
 
         code
@@ -232,7 +236,11 @@ impl Code {
         for instruction in &function.body {
             let result = match instruction {
                 Instruction::CallFun { name, arguments } => {
-                    let options = [print::code2cpp(name, arguments), input::code2cpp(name, arguments)];
+                    let options = [
+                        print::code2cpp(name, arguments),
+                        input::code2cpp(name, arguments),
+                        custom_fun::code2cpp(name, arguments)
+                    ];
                     options.join("")
                 },
                 Instruction::CreateVar { type_, name, value } => {
