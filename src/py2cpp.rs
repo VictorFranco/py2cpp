@@ -14,11 +14,15 @@ const INSTRUCTIONS: &str = r"(?m)(.*)\n";
 
 const SHIFT_LEFT: &str = r"(?m)\s{4}(.*)\n";
 
-const RETURN: &str = r"return (.*)";
-
 const MAIN: &str = r"(?m)^\S{4,}.*$";
 
 pub const NATIVE_FUNS: [&str; 2] = ["print", "input"];
+
+pub const INTEGER: &str = r"^\d+$";
+
+pub const STRING: &str = r##"^"[a-zA-Z: ]*"$"##;
+
+pub const VARIABLE: &str = r"^[a-zA-Z][a-zA-Z0-9]*$";
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Type {
@@ -46,7 +50,7 @@ pub enum Instruction {
     CreateVar { type_: Type, name: String, value: Option<String> },
     CallFun { name: String, arguments: Vec<Argument> },
     Loop { start: String, end: String, content: Vec<Instruction> },
-    Return (String)
+    Return { type_: Type, value: String }
 }
 
 #[derive(Debug)]
@@ -109,17 +113,6 @@ impl Code {
         (name, params)
     }
 
-    fn get_return_type(header: &str) -> Type {
-        let re = Regex::new(RETURN).unwrap();
-
-        if !re.is_match(header) {       // if the function has no return statement
-            return Type::Void;          // then it is void type
-        }
-        else {
-            return Type::Undefined
-        }
-    }
-
     fn get_instructions(self: &mut Code, body: String) -> Vec<Instruction> {
         let re = Regex::new(INSTRUCTIONS).unwrap();
         let caps = re.captures_iter(&body);
@@ -132,7 +125,7 @@ impl Code {
                 input::py2code(content, "false"),
                 declare::py2code(content),
                 custom_fun::py2code(content),
-                r#return::py2code(content)
+                r#return::py2code(&mut body, content)
             ];
             for result in results {
                 match result {
@@ -158,9 +151,11 @@ impl Code {
         }
 
         let mut body: Vec<Instruction> = Self::get_instructions(self, body);
+        let type_ = Type::Int;
+        let value = "0".to_string();
 
         body.push(
-            Instruction::Return("0".to_string())
+            Instruction::Return { type_, value }
         );
 
         Function {
@@ -224,6 +219,24 @@ impl Code {
         }
     }
 
+    fn infer_return_types(self: &mut Code) {
+        for fun in self.functions.iter_mut() {
+            let mut there_is_return = false;
+            for instruction in fun.body.iter() {
+                match instruction {
+                    Instruction::Return { type_, value: _ } => {
+                        there_is_return = true;
+                        fun.type_ = type_.clone();
+                    },
+                    _ => {}
+                }
+            }
+            if !there_is_return {
+                fun.type_ = Type::Void;
+            }
+        }
+    }
+
     fn py2code(py_code: &str) -> Code {
         let re = Regex::new(DEC_FUN).unwrap();
         let caps = re.captures_iter(py_code);
@@ -234,7 +247,7 @@ impl Code {
             let body = Self::shift_code_left(body);
             let header = cap.get(0).unwrap().as_str();
 
-            let type_: Type = Self::get_return_type(header);
+            let type_: Type = Type::Undefined;
             let body: Vec<Instruction> = Self::get_instructions(&mut code, body);
             let (name, params): (String, Vec<Param>) = Self::get_header_info(header);
 
@@ -247,6 +260,7 @@ impl Code {
         code.functions.push(main);
 
         Self::infer_param_types(&mut code);
+        Self::infer_return_types(&mut code);
 
         code.libraries.sort();
         code.libraries.dedup();         // remove duplicate libraries
@@ -287,8 +301,10 @@ impl Code {
                 },
                 Instruction::CreateVar { type_, name, value } => {
                     declare::code2cpp(type_, name, value)
-                }
-                Instruction::Return(value) => r#return::code2cpp(value),
+                },
+                Instruction::Return { type_: _, value } => {
+                    r#return::code2cpp(value)
+                },
                 _ => String::new()
             };
             body = format!("{}    {}\n", body, result);
