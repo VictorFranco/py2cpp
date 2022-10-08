@@ -2,11 +2,15 @@ use regex::Regex;
 use crate::py2cpp::{Argument, Instruction, Type, Library, get_libraries, NATIVE_FUNS};
 
 const CUSTOM_FUN: &str = r##"^([a-zA-Z0-9]*)\((.*)\)[^"]*$"##;
-const ARGUMENTS: &str = r##"("[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]+),?"##;
+const ARGUMENTS: &str = r##"(\d+|"[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]+),?"##;
+const INTEGER: &str = r"^\d+$";
+const STRING: &str = r##"^"[a-zA-Z: ]+"$"##;
 
 pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let re_fun = Regex::new(CUSTOM_FUN).unwrap();
     let re_args = Regex::new(ARGUMENTS).unwrap();
+    let re_int = Regex::new(INTEGER).unwrap();
+    let re_str = Regex::new(STRING).unwrap();
     let cap_fun = re_fun.captures(content);
 
     match cap_fun {
@@ -22,12 +26,15 @@ pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
 
             for cap in caps_args {
                 let content = cap.get(1).unwrap().as_str().to_string();
-                println!("{}", content);
+                let mut type_ = Type::Undefined;
+                if re_int.is_match(&content) {
+                    type_ = Type::Int;
+                }
+                if re_str.is_match(&content) {
+                    type_ = Type::String;
+                }
                 arguments.push(
-                    Argument {
-                        type_: Type::Undefined,
-                        content
-                    }
+                    Argument { type_, content }
                 );
 
             }

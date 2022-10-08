@@ -20,7 +20,7 @@ const MAIN: &str = r"(?m)^\S{4,}.*$";
 
 pub const NATIVE_FUNS: [&str; 2] = ["print", "input"];
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Type {
     Int,
     String,
@@ -184,6 +184,46 @@ impl Code {
         body
     }
 
+    fn infer_param_types(self: &mut Code) {
+        let mut called_funs = Vec::new();
+        let mut fun_types = Vec::new();
+
+        // find argument types
+        for fun in self.functions.iter() {
+            for instruction in fun.body.iter() {
+                match instruction {
+                    Instruction::CallFun { name, arguments } => {
+                        let mut arg_types = Vec::new();
+                        if NATIVE_FUNS.contains(&name.as_str()) {
+                            continue;                           // exclude native functions
+                        }
+                        for argument in arguments.iter() {
+                            arg_types.push(argument.type_.clone());
+                        }
+                        called_funs.push(name.to_string());     // store function name
+                        fun_types.push(arg_types);              // store argument types
+                    },
+                    _ => {}
+                };
+            }
+        }
+
+        // update param types
+        for fun in self.functions.iter_mut() {
+            let fun_name = fun.name.to_string();
+            if !called_funs.contains(&fun_name) {
+                continue;                                       // exclude uncalled functions
+            }
+            for (call_index, call_name) in called_funs.iter().enumerate() {
+                if &fun_name == call_name {
+                    for (arg_index, mut param) in fun.params.iter_mut().enumerate() {
+                        param.type_ = fun_types[call_index][arg_index].clone();
+                    }
+                }
+            }
+        }
+    }
+
     fn py2code(py_code: &str) -> Code {
         let re = Regex::new(DEC_FUN).unwrap();
         let caps = re.captures_iter(py_code);
@@ -205,6 +245,8 @@ impl Code {
 
         let main: Function = Self::get_main(&mut code, py_code);
         code.functions.push(main);
+
+        Self::infer_param_types(&mut code);
 
         code.libraries.sort();
         code.libraries.dedup();         // remove duplicate libraries
