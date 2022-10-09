@@ -18,9 +18,9 @@ const MAIN: &str = r"(?m)^\S{4,}.*$";
 
 pub const NATIVE_FUNS: [&str; 2] = ["print", "input"];
 
-pub const INTEGER: &str = r"^\d+$";
+pub const INTEGER: &str = r"^[+-]?\s*(\d+)$";
 
-pub const STRING: &str = r##"^"[a-zA-Z: ]*"$"##;
+pub const STRING: &str = r##"^"[a-zA-Z0-9: ]*"$"##;
 
 pub const VARIABLE: &str = r"^[a-zA-Z][a-zA-Z0-9]*$";
 
