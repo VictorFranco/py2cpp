@@ -48,10 +48,13 @@ pub fn code2cpp(name: &String, arguments: &Vec<Argument>) -> String {
             let mut result = format!("cout");
             let newline = &arguments.last().unwrap().content;
             for index in 0..arguments.len() - 1  {
+                if index > 0 {
+                    result.push_str(" << \" \"");
+                }
                 result = format!("{} << {}", result, arguments.get(index).unwrap().content);
             }
             if newline == "true" {
-                result = format!("{} << endl", result);
+                result.push_str(" << endl");
             }
             format!("{};", result)
         },
