@@ -124,7 +124,7 @@ impl Code {
                 print::py2code(content, "true"),
                 input::py2code(content, "false"),
                 declare::py2code(content),
-                custom_fun::py2code(content),
+                custom_fun::py2code(&mut body, content),
                 r#return::py2code(&mut body, content)
             ];
             for result in results {
@@ -212,7 +212,12 @@ impl Code {
             for (call_index, call_name) in called_funs.iter().enumerate() {
                 if &fun_name == call_name {
                     for (arg_index, mut param) in fun.params.iter_mut().enumerate() {
-                        param.type_ = fun_types[call_index][arg_index].clone();
+                        match param.type_ {
+                            Type::Undefined => {
+                                param.type_ = fun_types[call_index][arg_index].clone();
+                            },
+                            _ => {}
+                        }
                     }
                 }
             }
