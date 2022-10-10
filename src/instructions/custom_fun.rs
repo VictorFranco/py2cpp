@@ -1,7 +1,6 @@
 use regex::Regex;
-use crate::py2cpp::{Argument, Instruction, Type, Library, get_libraries, NATIVE_FUNS, INTEGER, STRING, VARIABLE};
+use crate::py2cpp::{Argument, Instruction, Type, Library, get_libraries, NATIVE_FUNS, CUSTOM_FUN, INTEGER, STRING, VARIABLE};
 
-const CUSTOM_FUN: &str = r##"^([a-zA-Z0-9]*)\((.*)\)[^"]*$"##;
 const ARGUMENTS: &str = r##"(\d+|"[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]*),?"##;
 
 pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {

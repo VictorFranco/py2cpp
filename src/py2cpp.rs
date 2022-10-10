@@ -24,6 +24,8 @@ pub const STRING: &str = r##"^"[a-zA-Z0-9: ]*"$"##;
 
 pub const VARIABLE: &str = r"^[a-zA-Z][a-zA-Z0-9]*$";
 
+pub const CUSTOM_FUN: &str = r##"^([a-zA-Z][a-zA-Z0-9]*)\((.*)\)[^"]*$"##;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Type {
     Int,
@@ -38,7 +40,7 @@ struct Param {
     name: String
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Argument {
     pub type_: Type,
     pub content: String
@@ -131,7 +133,7 @@ impl Code {
             let results = [
                 print::py2code(content, "true"),
                 input::py2code(content, "false"),
-                declare::py2code(content),
+                declare::py2code(&mut body, content),
                 custom_fun::py2code(&mut body, content),
                 r#return::py2code(&mut body, content)
             ];
