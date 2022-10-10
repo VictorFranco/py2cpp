@@ -1,5 +1,5 @@
 use regex::Regex;
-use crate::py2cpp::{Argument, Instruction, Type, Library, get_libraries};
+use crate::py2cpp::{Argument, Instruction, Type, Library, get_libraries, Value};
 use crate::instructions::print;
 
 const INPUT: &str = r##"^([^"]*[a-zA-Z][a-zA-Z0-9]*)\s*=\s*input\((.*)\)[^"]*$"##;
@@ -15,9 +15,11 @@ pub fn py2code(content: &str, newline: &str) -> Option<(Vec<Instruction>, Vec<Li
             let content = format!("print({})", content);
             let (mut instructions, mut libraries) = print::py2code(content.as_str(), newline).unwrap();
             // create string
+            let type_ = Type::String;
             let name = data.get(1).unwrap().as_str().to_string();
+            let value = Value::None;
             instructions.push(
-                Instruction::CreateVar { type_: Type::String, name, value: None }
+                Instruction::CreateVar { type_, name, value }
             );
             // save input into variable
             let name = "input".to_string();

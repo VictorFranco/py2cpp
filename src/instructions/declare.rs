@@ -1,5 +1,5 @@
 use regex::Regex;
-use crate::py2cpp::{Instruction, Type, Library, INTEGER, STRING};
+use crate::py2cpp::{Instruction, Type, Library, INTEGER, STRING, Value};
 
 const DECLARE: &str = r##"(?m)^([a-zA-Z][a-zA-Z0-9]*)\s*=\s*(\d+|"[a-zA-Z0-9: ]*")$"##;
 
@@ -20,7 +20,7 @@ pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
             if re_str.is_match(value) {
                 type_ = Type::String;
             }
-            let value = Some(value.to_string());
+            let value = Value::ConstValue(value.to_string());
             let instruction = Instruction::CreateVar { type_, name, value };
             Some((vec![instruction], vec![]))
         },
@@ -28,16 +28,21 @@ pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     }
 }
 
-pub fn code2cpp(type_: &Type, name: &String, option: &Option<String>) -> String {
-    match option {
-        Some(value) => {
+pub fn code2cpp(type_: &Type, name: &String, value: &Value) -> String {
+    match value {
+        Value::ConstValue(value) => {
             match type_ {
                 Type::Int => format!("int {} = {};", name, value),
                 Type::String => format!("string {} = {};", name, value),
                 _ => String::new()
             }
         },
-        None => {
+        Value::CallFun { name: _, arguments: _ } => {
+            match type_ {
+                _ => String::new()
+            }
+        },
+        Value::None => {
             match type_ {
                 Type::Int => format!("int {};", name),
                 Type::String => format!("string {};", name),

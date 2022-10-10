@@ -46,8 +46,16 @@ pub struct Argument {
 
 #[allow(unused)]
 #[derive(Debug)]
+pub enum Value {
+    ConstValue(String),
+    CallFun { name: String, arguments: Vec<Argument> },
+    None
+}
+
+#[allow(unused)]
+#[derive(Debug)]
 pub enum Instruction {
-    CreateVar { type_: Type, name: String, value: Option<String> },
+    CreateVar { type_: Type, name: String, value: Value },
     CallFun { name: String, arguments: Vec<Argument> },
     Loop { start: String, end: String, content: Vec<Instruction> },
     Return { type_: Type, value: String }
