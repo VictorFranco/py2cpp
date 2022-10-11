@@ -1,6 +1,7 @@
 use regex::Regex;
 use std::collections::HashMap;
 use crate::instructions::{print, input, custom_fun, declare, r#return};
+use crate::infer;
 
 // head of declared function
 const HEAD_DEC_FUN: &str = r"(?m)def\s([a-zA-Z][a-zA-Z_-]*)\(((([a-zA-Z][a-zA-Z0-9]*),?)*)\):";
@@ -35,9 +36,9 @@ pub enum Type {
 }
 
 #[derive(Debug)]
-struct Param {
-    type_: Type,
-    name: String
+pub struct Param {
+    pub type_: Type,
+    pub name: String
 }
 
 #[derive(Debug, Clone)]
@@ -63,16 +64,16 @@ pub enum Instruction {
 }
 
 #[derive(Debug)]
-struct Function {
-    type_: Type,
-    name: String,
-    params: Vec<Param>,
-    body: Vec<Instruction>
+pub struct Function {
+    pub type_: Type,
+    pub name: String,
+    pub params: Vec<Param>,
+    pub body: Vec<Instruction>
 }
 
 #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Library {
-    pub name: String
+    name: String
 }
 
 pub fn get_libraries(names: &[&str]) -> Vec<Library> {
@@ -88,8 +89,8 @@ pub fn get_libraries(names: &[&str]) -> Vec<Library> {
 
 #[derive(Debug)]
 pub struct Code {
-    libraries: Vec<Library>,
-    functions: Vec<Function>
+    pub libraries: Vec<Library>,
+    pub functions: Vec<Function>
 }
 
 impl Code {
@@ -187,94 +188,6 @@ impl Code {
         body
     }
 
-    fn infer_param_types(self: &mut Code) {
-        let mut called_funs = Vec::new();
-        let mut fun_types = Vec::new();
-
-        // find argument types
-        for fun in self.functions.iter() {
-            for instruction in fun.body.iter() {
-                match instruction {
-                    Instruction::CallFun { name, arguments } => {
-                        let mut arg_types = Vec::new();
-                        if NATIVE_FUNS.contains(&name.as_str()) {
-                            continue;                           // exclude native functions
-                        }
-                        for argument in arguments.iter() {
-                            arg_types.push(argument.type_.clone());
-                        }
-                        called_funs.push(name.to_string());     // store function name
-                        fun_types.push(arg_types);              // store argument types
-                    },
-                    _ => {}
-                };
-            }
-        }
-
-        // update param types
-        for fun in self.functions.iter_mut() {
-            let fun_name = fun.name.to_string();
-            if !called_funs.contains(&fun_name) {
-                continue;                                       // exclude uncalled functions
-            }
-            for (call_index, call_name) in called_funs.iter().enumerate() {
-                if &fun_name == call_name {
-                    for (arg_index, mut param) in fun.params.iter_mut().enumerate() {
-                        match param.type_ {
-                            Type::Undefined => {
-                                param.type_ = fun_types[call_index][arg_index].clone();
-                            },
-                            _ => {}
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    fn infer_return_types(self: &mut Code) {
-        for fun in self.functions.iter_mut() {
-            let mut there_is_return = false;
-            for instruction in fun.body.iter() {
-                match instruction {
-                    Instruction::Return { type_, value: _ } => {
-                        there_is_return = true;
-                        fun.type_ = type_.clone();
-                    },
-                    _ => {}
-                }
-            }
-            if !there_is_return {
-                fun.type_ = Type::Void;
-            }
-        }
-    }
-
-    fn infer_var_types(self: &mut Code) {
-        let mut return_types = HashMap::new();
-        for fun in self.functions.iter() {
-            return_types.insert(fun.name.clone(), fun.type_.clone());
-        }
-        for fun in self.functions.iter_mut() {
-            for instruction in fun.body.iter_mut() {
-                match instruction {
-                    Instruction::CreateVar { type_, name: _, value } => {
-                        match value {
-                            Value::CallFun { name, arguments: _ } => {
-                                match return_types.get(name) {
-                                    Some(data) => *type_ = data.clone(),
-                                    None => {}
-                                }
-                            },
-                            _ => {}
-                        }
-                    },
-                    _ => {}
-                }
-            }
-        }
-    }
-
     fn py2code(py_code: &str) -> Code {
         let re = Regex::new(DEC_FUN).unwrap();
         let caps = re.captures_iter(py_code);
@@ -297,9 +210,9 @@ impl Code {
         let main: Function = Self::get_main(&mut code, py_code);
         code.functions.push(main);
 
-        Self::infer_param_types(&mut code);
-        Self::infer_return_types(&mut code);
-        Self::infer_var_types(&mut code);
+        infer::param_types(&mut code);
+        infer::return_types(&mut code);
+        infer::var_types(&mut code);
 
         code.libraries.sort();
         code.libraries.dedup();         // remove duplicate libraries

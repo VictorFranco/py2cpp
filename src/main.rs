@@ -1,6 +1,7 @@
 use std::fs::File;          // file libraries
 use std::io::prelude::*;
 mod py2cpp;
+mod infer;
 mod instructions;
 
 fn main() {
