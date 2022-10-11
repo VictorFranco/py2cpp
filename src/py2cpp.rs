@@ -46,7 +46,6 @@ pub struct Argument {
     pub content: String
 }
 
-#[allow(unused)]
 #[derive(Debug)]
 pub enum Value {
     ConstValue(String),
@@ -251,6 +250,31 @@ impl Code {
         }
     }
 
+    fn infer_var_types(self: &mut Code) {
+        let mut return_types = HashMap::new();
+        for fun in self.functions.iter() {
+            return_types.insert(fun.name.clone(), fun.type_.clone());
+        }
+        for fun in self.functions.iter_mut() {
+            for instruction in fun.body.iter_mut() {
+                match instruction {
+                    Instruction::CreateVar { type_, name: _, value } => {
+                        match value {
+                            Value::CallFun { name, arguments: _ } => {
+                                match return_types.get(name) {
+                                    Some(data) => *type_ = data.clone(),
+                                    None => {}
+                                }
+                            },
+                            _ => {}
+                        }
+                    },
+                    _ => {}
+                }
+            }
+        }
+    }
+
     fn py2code(py_code: &str) -> Code {
         let re = Regex::new(DEC_FUN).unwrap();
         let caps = re.captures_iter(py_code);
@@ -275,6 +299,7 @@ impl Code {
 
         Self::infer_param_types(&mut code);
         Self::infer_return_types(&mut code);
+        Self::infer_var_types(&mut code);
 
         code.libraries.sort();
         code.libraries.dedup();         // remove duplicate libraries
