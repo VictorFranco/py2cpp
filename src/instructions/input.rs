@@ -4,7 +4,7 @@ use crate::instructions::print;
 
 const INPUT: &str = r##"^input\((.*)\)$"##;
 
-pub fn py2code(var_name: &str, content: &str, newline: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(var_name: &str, content: &str, newline: bool) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let re_input = Regex::new(INPUT).unwrap();
     let cap_print = re_input.captures(content);
 

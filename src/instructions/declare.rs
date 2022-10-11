@@ -39,7 +39,7 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
                 if fun_name == "input" {
                     type_ = Type::String;
                     value = Value::None;
-                    let (mut input_instructions, mut input_libraries) = input::py2code(var_name, content, "true").unwrap();
+                    let (mut input_instructions, mut input_libraries) = input::py2code(var_name, content, false).unwrap();
                     libraries.append(&mut input_libraries);
                     instructions.append(&mut input_instructions);
                 }

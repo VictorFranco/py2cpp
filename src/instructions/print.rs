@@ -4,7 +4,7 @@ use crate::py2cpp::{Argument, Instruction, Type, Library, get_libraries};
 const PRINT: &str = r##"^print\((.*)\)[^"]*$"##;
 const MESSAGES: &str = r##"("[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]+),?"##;
 
-pub fn py2code(content: &str, newline: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(content: &str, newline: bool) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let re_print = Regex::new(PRINT).unwrap();
     let re_msgs = Regex::new(MESSAGES).unwrap();
     let cap_print = re_print.captures(content);
