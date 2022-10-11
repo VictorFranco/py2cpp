@@ -132,7 +132,6 @@ impl Code {
             let content = cap.get(1).unwrap().as_str();
             let results = [
                 print::py2code(content, "true"),
-                input::py2code(content, "false"),
                 declare::py2code(&mut body, content),
                 custom_fun::py2code(&mut body, content),
                 r#return::py2code(&mut body, content)

@@ -1,29 +1,22 @@
 use regex::Regex;
-use crate::py2cpp::{Argument, Instruction, Type, Library, get_libraries, Value};
+use crate::py2cpp::{Argument, Instruction, Type, Library, get_libraries};
 use crate::instructions::print;
 
-const INPUT: &str = r##"^([^"]*[a-zA-Z][a-zA-Z0-9]*)\s*=\s*input\((.*)\)[^"]*$"##;
+const INPUT: &str = r##"^input\((.*)\)$"##;
 
-pub fn py2code(content: &str, newline: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(var_name: &str, content: &str, newline: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let re_input = Regex::new(INPUT).unwrap();
     let cap_print = re_input.captures(content);
 
     match cap_print {
         Some(data) => {
             // print text
-            let content = data.get(2).unwrap().as_str();
+            let content = data.get(1).unwrap().as_str();
             let content = format!("print({})", content);
             let (mut instructions, mut libraries) = print::py2code(content.as_str(), newline).unwrap();
-            // create string
-            let type_ = Type::String;
-            let name = data.get(1).unwrap().as_str().to_string();
-            let value = Value::None;
-            instructions.push(
-                Instruction::CreateVar { type_, name, value }
-            );
             // save input into variable
             let name = "input".to_string();
-            let content = data.get(1).unwrap().as_str().to_string();
+            let content = var_name.to_string();
             let argument = Argument { type_: Type::Undefined, content };
             instructions.push(
                 Instruction::CallFun { name, arguments: vec![argument] }
