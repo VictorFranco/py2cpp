@@ -1,6 +1,6 @@
 use regex::Regex;
-use crate::py2cpp::{Type, Value, Instruction, Library, INTEGER, STRING, CUSTOM_FUN};
-use crate::instructions::{custom_fun, input};
+use crate::py2cpp::{Type, Value, Instruction, Library, NATIVE_FUNS, INTEGER, STRING, CUSTOM_FUN};
+use crate::instructions::{custom_fun, input, int};
 
 const DECLARE: &str = r##"(?m)^([a-zA-Z][a-zA-Z0-9]*)\s*=\s*(\d+|"[a-zA-Z0-9: ]*"|([a-zA-Z][a-zA-Z0-9]*)\(.*\))$"##;
 
@@ -20,10 +20,36 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
             let mut value = Value::None;
             let content = data.get(2).unwrap().as_str();
             if re_fun.is_match(content) {
+                let fun = data.get(3).unwrap().as_str();
+                if NATIVE_FUNS.contains(&fun) {
+                    match fun {
+                        "input" => {
+                            let (mut input_instructions, mut input_libraries) = input::py2code(var_name, content, false).unwrap();
+                            libraries.append(&mut input_libraries);
+                            instructions.append(&mut input_instructions);
+                            type_ = Type::String;
+                        },
+                        "int" => {
+                            let (int_instructions, mut int_libraries) = int::py2code(content).unwrap();
+                            libraries.append(&mut int_libraries);
+                            match &int_instructions[0] {
+                                Instruction::CallFun { name, arguments } => {
+                                    let name = name.to_string();
+                                    let arguments = arguments.to_vec();
+                                    value = Value::CallFun { name, arguments };
+                                },
+                                _ => {}
+                            }
+                            type_ = Type::Int;
+                        },
+                        _ => {}
+                    };
+                }
                 let option = custom_fun::py2code(body, content);
                 match option {
-                    Some((instructions, _libraries)) => {
-                        let instruction = &instructions[0];
+                    Some((custom_instructions, mut custom_libraries)) => {
+                        libraries.append(&mut custom_libraries);
+                        let instruction = &custom_instructions[0];
                         match instruction {
                             Instruction::CallFun { name, arguments } => {
                                 let name = name.to_string();
@@ -34,14 +60,6 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
                         }
                     },
                     None => {}
-                }
-                let fun_name = data.get(3).unwrap().as_str();
-                if fun_name == "input" {
-                    type_ = Type::String;
-                    value = Value::None;
-                    let (mut input_instructions, mut input_libraries) = input::py2code(var_name, content, false).unwrap();
-                    libraries.append(&mut input_libraries);
-                    instructions.append(&mut input_instructions);
                 }
             }
             else {
@@ -73,7 +91,10 @@ pub fn code2cpp(type_: &Type, name: &String, value: &Value) -> String {
             }
         },
         Value::CallFun { name, arguments } => {
-            let fun = custom_fun::code2cpp(name, arguments, false);
+            let fun = match name.as_str() {
+                "int" => int::code2cpp(&arguments[0]),
+                _ => custom_fun::code2cpp(name, arguments, false)
+            };
             match type_ {
                 Type::Int => format!("int {} = {};", name_var, fun),
                 Type::String => format!("string {} = {};", name_var, fun),

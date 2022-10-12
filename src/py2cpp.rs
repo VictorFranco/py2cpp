@@ -17,7 +17,7 @@ const SHIFT_LEFT: &str = r"(?m)\s{4}(.*)\n";
 
 const MAIN: &str = r"(?m)^\S{4,}.*$";
 
-pub const NATIVE_FUNS: [&str; 2] = ["print", "input"];
+pub const NATIVE_FUNS: [&str; 3] = ["print", "input", "int"];
 
 pub const INTEGER: &str = r"^[+-]?\s*(\d+)$";
 

@@ -1,5 +1,6 @@
 use regex::Regex;
-use crate::py2cpp::{Type, Argument, Value, Instruction, Library, get_libraries, NATIVE_FUNS, INTEGER, STRING, VARIABLE, CUSTOM_FUN};
+use crate::py2cpp::{Type, Argument, Value, Instruction, Library, NATIVE_FUNS, INTEGER, STRING, VARIABLE, CUSTOM_FUN};
+use crate::instructions::int;
 
 const ARGUMENTS: &str = r##"([+-]?\s*\d+|"[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]*(\(.*\))?),?"##;
 
@@ -13,9 +14,16 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
 
     match cap_fun {
         Some(data) => {
+            let mut libraries = Vec::new();
             let fun = data.get(1).unwrap().as_str();
             if NATIVE_FUNS.contains(&fun) {
-                return None;
+                return match fun {
+                    "int" => {
+                        let call_int_fun = data.get(0).unwrap().as_str();
+                        int::py2code(call_int_fun)
+                    },
+                    _ => None
+                };
             }
             let arguments = data.get(2).unwrap().as_str();
             let caps_args = re_args.captures_iter(arguments);
@@ -48,9 +56,15 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
                     value = Value::UseVar(content.to_string());
                 }
                 if re_fun.is_match(content) {
-                    let (instructions, _libraries) = py2code(body, content).unwrap();
-                    let instruction = &instructions[0];
-                    match instruction {
+                    let cap = re_fun.captures(content).unwrap();
+                    let fun = cap.get(1).unwrap().as_str();
+                    match fun {
+                        "int" => arg_type = Type::Int,
+                        _ => {}
+                    }
+                    let (instructions, mut fun_libraries) = py2code(body, content).unwrap();
+                    libraries.append(&mut fun_libraries);
+                    match &instructions[0] {
                         Instruction::CallFun { name, arguments } => {
                             let name = name.to_string();
                             let arguments = arguments.to_vec();
@@ -67,7 +81,6 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
             }
 
             let instruction = Instruction::CallFun { name, arguments };
-            let libraries = get_libraries(&["iostream"]);
             Some((vec![instruction], libraries))
         },
         None => None
@@ -85,7 +98,10 @@ pub fn code2cpp(name: &String, arguments: &Vec<Argument>, semicolon: bool) -> St
                 format!("{}{}", result, value)
             },
             Value::CallFun { name, arguments } => {
-                format!("{}{}", result, code2cpp(name, arguments, false))
+                match name.as_str() {
+                    "int" => format!("{}{}", result, int::code2cpp(&arguments[0])),
+                    _ => format!("{}{}", result, code2cpp(name, arguments, false))
+                }
             }
             _ => result
         };
