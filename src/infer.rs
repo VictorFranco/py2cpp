@@ -1,5 +1,22 @@
 use std::collections::HashMap;
-use crate::py2cpp::{Code, Instruction, Type, NATIVE_FUNS, Value};
+use crate::py2cpp::{Code, Argument, Instruction, Type, NATIVE_FUNS, Value};
+
+fn store_arg_types(name: &String, called_funs: &mut Vec<String>, fun_types: &mut Vec<Vec<Type>>, arguments: &Vec<Argument>) {
+    let mut arg_types = Vec::new();
+    if !NATIVE_FUNS.contains(&name.as_str()) {
+        for argument in arguments.iter() {
+            arg_types.push(argument.type_.clone());
+            match &argument.value {
+                Value::CallFun { name, arguments } => {
+                    store_arg_types(&name, called_funs, fun_types, &arguments);
+                },
+                _ => {}
+            }
+        }
+        called_funs.push(name.to_string());     // store function name
+        fun_types.push(arg_types);              // store argument types
+    }
+}
 
 pub fn param_types(code: &mut Code) {
     let mut called_funs = Vec::new();
@@ -10,16 +27,16 @@ pub fn param_types(code: &mut Code) {
         for instruction in fun.body.iter() {
             match instruction {
                 Instruction::CallFun { name, arguments } => {
-                    let mut arg_types = Vec::new();
-                    if NATIVE_FUNS.contains(&name.as_str()) {
-                        continue;                           // exclude native functions
-                    }
-                    for argument in arguments.iter() {
-                        arg_types.push(argument.type_.clone());
-                    }
-                    called_funs.push(name.to_string());     // store function name
-                    fun_types.push(arg_types);              // store argument types
+                    store_arg_types(name, &mut called_funs, &mut fun_types, arguments);
                 },
+                Instruction::CreateVar { type_: _, name: _, value } => {
+                    match value {
+                        Value::CallFun { name, arguments } => {
+                            store_arg_types(name, &mut called_funs, &mut fun_types, arguments);
+                        },
+                        _ => {}
+                    }
+                }
                 _ => {}
             };
         }
