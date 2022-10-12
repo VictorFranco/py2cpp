@@ -1,7 +1,7 @@
 use regex::Regex;
 use crate::py2cpp::{Type, Argument, Value, Instruction, Library, get_libraries, NATIVE_FUNS, INTEGER, STRING, VARIABLE, CUSTOM_FUN};
 
-const ARGUMENTS: &str = r##"(\d+|"[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]*),?"##;
+const ARGUMENTS: &str = r##"([+-]?\s*\d+|"[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]*(\(.*\))?),?"##;
 
 pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let re_fun = Regex::new(CUSTOM_FUN).unwrap();
@@ -47,6 +47,18 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
                     }
                     value = Value::UseVar(content.to_string());
                 }
+                if re_fun.is_match(content) {
+                    let (instructions, _libraries) = py2code(body, content).unwrap();
+                    let instruction = &instructions[0];
+                    match instruction {
+                        Instruction::CallFun { name, arguments } => {
+                            let name = name.to_string();
+                            let arguments = arguments.to_vec();
+                            value = Value::CallFun { name, arguments };
+                        },
+                        _ => {}
+                    }
+                }
 
                 let type_ = arg_type;
                 arguments.push(
@@ -62,7 +74,7 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
     }
 }
 
-pub fn code2cpp(name: &String, arguments: &Vec<Argument>) -> String {
+pub fn code2cpp(name: &String, arguments: &Vec<Argument>, semicolon: bool) -> String {
     if NATIVE_FUNS.contains(&name.as_str()) {
         return String::new();
     }
@@ -72,11 +84,17 @@ pub fn code2cpp(name: &String, arguments: &Vec<Argument>) -> String {
             Value::ConstValue(value) | Value::UseVar(value) => {
                 format!("{}{}", result, value)
             },
+            Value::CallFun { name, arguments } => {
+                format!("{}{}", result, code2cpp(name, arguments, false))
+            }
             _ => result
         };
         if index < arguments.len() - 1 {
             result = format!("{}, ", result);
         }
     }
-    format!("{});", result)
+    match semicolon {
+        true  => format!("{});", result),
+        false => format!("{})", result),
+    }
 }

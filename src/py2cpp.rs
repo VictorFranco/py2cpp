@@ -248,7 +248,7 @@ impl Code {
                     let options = [
                         print::code2cpp(name, arguments),
                         input::code2cpp(name, arguments),
-                        custom_fun::code2cpp(name, arguments)
+                        custom_fun::code2cpp(name, arguments, true)
                     ];
                     options.join("")
                 },

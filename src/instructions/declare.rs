@@ -73,11 +73,11 @@ pub fn code2cpp(type_: &Type, name: &String, value: &Value) -> String {
             }
         },
         Value::CallFun { name, arguments } => {
-            let fun = custom_fun::code2cpp(name, arguments);
+            let fun = custom_fun::code2cpp(name, arguments, false);
             match type_ {
-                Type::Int => format!("int {} = {}", name_var, fun),
-                Type::String => format!("string {} = {}", name_var, fun),
-                Type::Undefined => format!("undefined {} = {}", name_var, fun),
+                Type::Int => format!("int {} = {};", name_var, fun),
+                Type::String => format!("string {} = {};", name_var, fun),
+                Type::Undefined => format!("undefined {} = {};", name_var, fun),
                 _ => String::new()
             }
         },
