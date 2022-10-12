@@ -1,5 +1,5 @@
 use regex::Regex;
-use crate::py2cpp::{Instruction, Type, Library, INTEGER, STRING, VARIABLE};
+use crate::py2cpp::{Type, Instruction, Library, INTEGER, STRING, VARIABLE};
 
 const RETURN: &str = r"^return (.*)$";
 
@@ -14,7 +14,7 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
         Some(data) => {
             let return_value = data.get(1).unwrap().as_str();
             let mut return_type_ = Type::Undefined;
-                if re_int.is_match(return_value) {
+            if re_int.is_match(return_value) {
                 return_type_ = Type::Int;
             }
             if re_str.is_match(return_value) {

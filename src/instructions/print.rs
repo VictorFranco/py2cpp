@@ -1,5 +1,5 @@
 use regex::Regex;
-use crate::py2cpp::{Argument, Instruction, Type, Library, get_libraries};
+use crate::py2cpp::{Type, Argument, Value, Instruction, Library, get_libraries, INTEGER, STRING, VARIABLE};
 
 const PRINT: &str = r##"^print\((.*)\)[^"]*$"##;
 const MESSAGES: &str = r##"("[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]+),?"##;
@@ -7,6 +7,9 @@ const MESSAGES: &str = r##"("[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]+),?"##;
 pub fn py2code(content: &str, newline: bool) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let re_print = Regex::new(PRINT).unwrap();
     let re_msgs = Regex::new(MESSAGES).unwrap();
+    let re_int = Regex::new(INTEGER).unwrap();
+    let re_str = Regex::new(STRING).unwrap();
+    let re_var = Regex::new(VARIABLE).unwrap();
     let cap_print = re_print.captures(content);
 
     match cap_print {
@@ -17,20 +20,31 @@ pub fn py2code(content: &str, newline: bool) -> Option<(Vec<Instruction>, Vec<Li
             let mut arguments = Vec::new();
 
             for cap in caps_msgs {
-                let content = cap.get(1).unwrap().as_str().to_string();
-                arguments.push(
-                    Argument {
-                        type_: Type::Undefined,
-                        content
+                let content = cap.get(1).unwrap().as_str();
+                let mut type_ = Type::Undefined;
+                let value = if re_var.is_match(content) {
+                    Value::UseVar(content.to_string())
+                }
+                else {
+                    if re_int.is_match(content) {
+                        type_ = Type::Int;
                     }
+                    if re_str.is_match(content) {
+                        type_ = Type::String;
+                    }
+                    Value::ConstValue(content.to_string())
+                };
+                arguments.push(
+                    Argument { type_, value }
                 );
 
             }
 
+            let value = Value::ConstValue(newline.to_string());
             arguments.push(
                 Argument {
                     type_: Type::Undefined,
-                    content: newline.to_string()
+                    value
                 }
             );
 
@@ -46,15 +60,26 @@ pub fn code2cpp(name: &String, arguments: &Vec<Argument>) -> String {
     match name.as_str() {
         "print" => {
             let mut result = format!("cout");
-            let newline = &arguments.last().unwrap().content;
             for index in 0..arguments.len() - 1  {
                 if index > 0 {
                     result.push_str(" << \" \"");
                 }
-                result = format!("{} << {}", result, arguments.get(index).unwrap().content);
+                let argument = &arguments.get(index).unwrap().value;
+                match argument {
+                    Value::ConstValue(value) | Value::UseVar(value) => {
+                        result = format!("{} << {}", result, value);
+                    },
+                    _ => {}
+                }
             }
-            if newline == "true" {
-                result.push_str(" << endl");
+            let newline = &arguments.last().unwrap().value;
+            match newline {
+                Value::ConstValue(value) => {
+                    if value == "true" {
+                        result.push_str(" << endl");
+                    }
+                }
+                _ => {}
             }
             format!("{};", result)
         },

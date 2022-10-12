@@ -1,5 +1,5 @@
 use regex::Regex;
-use crate::py2cpp::{Argument, Instruction, Type, Library, get_libraries};
+use crate::py2cpp::{Type, Argument, Value, Instruction, Library, get_libraries};
 use crate::instructions::print;
 
 const INPUT: &str = r##"^input\((.*)\)$"##;
@@ -16,8 +16,8 @@ pub fn py2code(var_name: &str, content: &str, newline: bool) -> Option<(Vec<Inst
             let (mut instructions, mut libraries) = print::py2code(content.as_str(), newline).unwrap();
             // save input into variable
             let name = "input".to_string();
-            let content = var_name.to_string();
-            let argument = Argument { type_: Type::Undefined, content };
+            let value = Value::UseVar(var_name.to_string());
+            let argument = Argument { type_: Type::Undefined, value };
             instructions.push(
                 Instruction::CallFun { name, arguments: vec![argument] }
             );
@@ -33,7 +33,10 @@ pub fn py2code(var_name: &str, content: &str, newline: bool) -> Option<(Vec<Inst
 pub fn code2cpp(name: &String, arguments: &Vec<Argument>) -> String {
     match name.as_str() {
         "input" => {
-            format!("cin >> {};", arguments[0].content)
+            match &arguments[0].value {
+                Value::UseVar(value) => format!("cin >> {};", value),
+                _ => String::new()
+            }
         },
         _ => String::new()
     }

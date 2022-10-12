@@ -44,12 +44,13 @@ pub struct Param {
 #[derive(Debug, Clone)]
 pub struct Argument {
     pub type_: Type,
-    pub content: String
+    pub value: Value
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Value {
     ConstValue(String),
+    UseVar(String),
     CallFun { name: String, arguments: Vec<Argument> },
     None
 }

@@ -1,5 +1,5 @@
 use regex::Regex;
-use crate::py2cpp::{Argument, Instruction, Type, Library, get_libraries, NATIVE_FUNS, CUSTOM_FUN, INTEGER, STRING, VARIABLE};
+use crate::py2cpp::{Type, Argument, Value, Instruction, Library, get_libraries, NATIVE_FUNS, INTEGER, STRING, VARIABLE, CUSTOM_FUN};
 
 const ARGUMENTS: &str = r##"(\d+|"[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]*),?"##;
 
@@ -25,11 +25,14 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
             for cap in caps_args {
                 let content = cap.get(1).unwrap().as_str();
                 let mut arg_type = Type::Undefined;
+                let mut value = Value::None;
                 if re_int.is_match(content) {
                     arg_type = Type::Int;
+                    value = Value::ConstValue(content.to_string());
                 }
                 if re_str.is_match(content) {
                     arg_type = Type::String;
+                    value = Value::ConstValue(content.to_string());
                 }
                 if re_var.is_match(content) {
                     for instruction in body.iter() {
@@ -42,13 +45,13 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
                             _ => {}
                         }
                     }
+                    value = Value::UseVar(content.to_string());
                 }
-                let type_ = arg_type;
-                let content = content.to_string();
-                arguments.push(
-                    Argument { type_, content }
-                );
 
+                let type_ = arg_type;
+                arguments.push(
+                    Argument { type_, value }
+                );
             }
 
             let instruction = Instruction::CallFun { name, arguments };
@@ -65,7 +68,12 @@ pub fn code2cpp(name: &String, arguments: &Vec<Argument>) -> String {
     }
     let mut result = format!("{}(", name);
     for (index, argument) in arguments.iter().enumerate()  {
-        result = format!("{}{}", result, argument.content );
+        result = match &argument.value {
+            Value::ConstValue(value) | Value::UseVar(value) => {
+                format!("{}{}", result, value)
+            },
+            _ => result
+        };
         if index < arguments.len() - 1 {
             result = format!("{}, ", result);
         }
