@@ -6,9 +6,9 @@ const INPUT: &str = r##"^input\((.*)\)$"##;
 
 pub fn py2code(var_name: &str, content: &str, newline: bool) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let re_input = Regex::new(INPUT).unwrap();
-    let cap_print = re_input.captures(content);
+    let cap_input = re_input.captures(content);
 
-    match cap_print {
+    match cap_input {
         Some(data) => {
             // print text
             let content = data.get(1).unwrap().as_str();
