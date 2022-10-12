@@ -268,16 +268,12 @@ impl Code {
     fn code2cpp(self: Code) -> String {
         // generate libraries
         let mut result = String::new();
-        let mut cpp_std = false;
         for library in self.libraries.iter() {
             result = format!("{}#include <{}>\n", result, library.name);
-            if library.name == "iostream" || library.name == "string" {
-                cpp_std = true;
-            }
         }
         result.push('\n');
         // add namespace
-        if cpp_std {
+        if self.libraries.len() > 0 {
             result = format!("{}using namespace std;\n\n", result);
         }
         // generate functions
