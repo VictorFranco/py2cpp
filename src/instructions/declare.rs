@@ -1,5 +1,5 @@
 use regex::Regex;
-use crate::py2cpp::{Type, Value, Instruction, Library, NATIVE_FUNS, INTEGER, STRING, CUSTOM_FUN};
+use crate::py2cpp::{Type, type2cpp, Value, Instruction, Library, NATIVE_FUNS, INTEGER, STRING, CUSTOM_FUN};
 use crate::instructions::{custom_fun, input, int};
 
 const DECLARE: &str = r##"(?m)^([a-zA-Z][a-zA-Z0-9]*)\s*=\s*(\d+|"[a-zA-Z0-9: ]*"|([a-zA-Z][a-zA-Z0-9]*)\(.*\))$"##;
@@ -81,33 +81,20 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
 }
 
 pub fn code2cpp(type_: &Type, name: &String, value: &Value) -> String {
-    let name_var = name;
+    let var_name = name;
     match value {
         Value::ConstValue(value) | Value::UseVar(value) => {
-            match type_ {
-                Type::Int => format!("int {} = {};", name, value),
-                Type::String => format!("string {} = {};", name, value),
-                _ => String::new()
-            }
+            format!("{} {} = {};", type2cpp(type_), name, value)
         },
         Value::CallFun { name, arguments } => {
-            let fun = match name.as_str() {
+            let value = match name.as_str() {
                 "int" => int::code2cpp(&arguments[0]),
                 _ => custom_fun::code2cpp(name, arguments, false)
             };
-            match type_ {
-                Type::Int => format!("int {} = {};", name_var, fun),
-                Type::String => format!("string {} = {};", name_var, fun),
-                Type::Undefined => format!("undefined {} = {};", name_var, fun),
-                _ => String::new()
-            }
+            format!("{} {} = {};", type2cpp(type_), var_name, value)
         },
         Value::None => {
-            match type_ {
-                Type::Int => format!("int {};", name),
-                Type::String => format!("string {};", name),
-                _ => String::new()
-            }
+            format!("{} {};", type2cpp(type_), name)
         }
     }
 }

@@ -1,5 +1,4 @@
 use regex::Regex;
-use std::collections::HashMap;
 use crate::instructions::{print, input, custom_fun, declare, r#return};
 use crate::infer;
 
@@ -33,6 +32,15 @@ pub enum Type {
     String,
     Void,
     Undefined
+}
+
+pub fn type2cpp(type_: &Type) -> String {
+    match type_ {
+        Type::Int => "int",
+        Type::String => "string",
+        Type::Void => "void",
+        Type::Undefined => "undefined"
+    }.to_string()
 }
 
 #[derive(Debug)]
@@ -222,21 +230,15 @@ impl Code {
     }
 
     fn fun2cpp(function: &Function) -> String {
-        let dic_types = HashMap::from([
-             (Type::Int, "int"),
-             (Type::String, "string"),
-             (Type::Void, "void"),
-             (Type::Undefined, "undefined"),
-        ]);
 
         // generate function header
-        let type_ = dic_types.get(&function.type_).unwrap();
+        let type_ = type2cpp(&function.type_);
         let mut header = format!("{} {}(", type_, function.name);
         for (index, param) in function.params.iter().enumerate() {
             if index > 0 {
                 header.push_str(", ");
             }
-            let type_ = dic_types.get(&param.type_).unwrap();
+            let type_ = type2cpp(&param.type_);
             header = format!("{}{} {}", header, type_, param.name);
         }
 
