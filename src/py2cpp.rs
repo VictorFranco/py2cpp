@@ -22,6 +22,8 @@ pub const INTEGER: &str = r"^[+-]?\s*(\d+)$";
 
 pub const STRING: &str = r##"^"[a-zA-Z0-9: ]*"$"##;
 
+pub const VECTOR: &str = r"^\[\]$";
+
 pub const VARIABLE: &str = r"^[a-zA-Z][a-zA-Z0-9]*$";
 
 pub const CUSTOM_FUN: &str = r##"^([a-zA-Z][a-zA-Z0-9]*)\((.*)\)[^"]*$"##;
@@ -31,16 +33,23 @@ pub enum Type {
     Int,
     String,
     Void,
+    Vector(Box<Type>),
     Undefined
 }
 
 pub fn type2cpp(type_: &Type) -> String {
     match type_ {
-        Type::Int => "int",
-        Type::String => "string",
-        Type::Void => "void",
-        Type::Undefined => "undefined"
-    }.to_string()
+        Type::Vector(type_) => {
+            format!("vector<{}>", type2cpp(type_))
+        },
+        _ => match type_ {
+            Type::Int => "int",
+            Type::String => "string",
+            Type::Void => "void",
+            Type::Undefined => "undefined",
+            _ => ""
+        }.to_string()
+    }
 }
 
 #[derive(Debug)]
@@ -219,8 +228,8 @@ impl Code {
         let main: Function = Self::get_main(&mut code, py_code);
         code.functions.push(main);
 
-        infer::param_types(&mut code);
         infer::return_types(&mut code);
+        infer::param_types(&mut code);
         infer::var_types(&mut code);
 
         code.libraries.sort();

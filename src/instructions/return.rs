@@ -1,5 +1,5 @@
 use regex::Regex;
-use crate::py2cpp::{Type, Instruction, Library, INTEGER, STRING, VARIABLE};
+use crate::py2cpp::{Type, Instruction, Library, INTEGER, STRING, VECTOR, VARIABLE};
 
 const RETURN: &str = r"^return (.*)$";
 
@@ -7,6 +7,7 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
     let re_return = Regex::new(RETURN).unwrap();
     let re_int = Regex::new(INTEGER).unwrap();
     let re_str = Regex::new(STRING).unwrap();
+    let re_vec = Regex::new(VECTOR).unwrap();
     let re_var = Regex::new(VARIABLE).unwrap();
     let cap_return = re_return.captures(content);
 
@@ -19,6 +20,9 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
             }
             if re_str.is_match(return_value) {
                 return_type_ = Type::String;
+            }
+            if re_vec.is_match(return_value) {
+                return_type_ = Type::Vector(Box::new(Type::Undefined));
             }
             if re_var.is_match(return_value) {
                 for instruction in body.iter() {

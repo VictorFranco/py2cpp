@@ -1,13 +1,14 @@
 use regex::Regex;
-use crate::py2cpp::{Type, type2cpp, Value, Instruction, Library, NATIVE_FUNS, INTEGER, STRING, CUSTOM_FUN};
+use crate::py2cpp::{Type, type2cpp, Value, Instruction, Library, get_libraries, NATIVE_FUNS, INTEGER, STRING, VECTOR, CUSTOM_FUN};
 use crate::instructions::{custom_fun, input, int};
 
-const DECLARE: &str = r##"(?m)^([a-zA-Z][a-zA-Z0-9]*)\s*=\s*(\d+|"[a-zA-Z0-9: ]*"|([a-zA-Z][a-zA-Z0-9]*)\(.*\))$"##;
+const DECLARE: &str = r##"(?m)^([a-zA-Z][a-zA-Z0-9]*)\s*=\s*(\d+|"[a-zA-Z0-9: ]*"|\[\]|([a-zA-Z][a-zA-Z0-9]*)\(.*\)?)$"##;
 
 pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let re_dec = Regex::new(DECLARE).unwrap();
     let re_int = Regex::new(INTEGER).unwrap();
     let re_str = Regex::new(STRING).unwrap();
+    let re_vec = Regex::new(VECTOR).unwrap();
     let re_fun = Regex::new(CUSTOM_FUN).unwrap();
     let cap_dec = re_dec.captures(content);
 
@@ -70,6 +71,11 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
                     type_ = Type::String;
                 }
                 value = Value::ConstValue(content.to_string());
+                if re_vec.is_match(content) {
+                    type_ = Type::Vector(Box::new(Type::Undefined));
+                    value = Value::None;
+                    libraries = get_libraries(&["vector"]);
+                }
             }
             let name = var_name.to_string();
             let instruction = Instruction::CreateVar { type_, name, value };
