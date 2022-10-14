@@ -1,5 +1,5 @@
 [package]
-name = "python2cpp"
+name = "py2cpp"
 version = "0.1.0"
 edition = "2021"
 
