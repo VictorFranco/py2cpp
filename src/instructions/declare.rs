@@ -1,8 +1,19 @@
 use regex::Regex;
-use crate::py2cpp::{Type, type2cpp, Value, Instruction, Library, get_libraries, NATIVE_FUNS, INTEGER, STRING, VECTOR, CUSTOM_FUN};
+use crate::py2cpp::{Type, type2cpp, Value, Instruction, Library, get_libraries, INTEGER, STRING, VECTOR, CUSTOM_FUN};
 use crate::instructions::{custom_fun, input, int};
 
 const DECLARE: &str = r##"(?m)^([a-zA-Z][a-zA-Z0-9]*)\s*=\s*(\d+|"[a-zA-Z0-9: ]*"|\[\]|([a-zA-Z][a-zA-Z0-9]*)\(.*\)?)$"##;
+
+fn instruc2value(instruction: &Instruction) -> Value {
+    match instruction {
+        Instruction::CallFun { name, arguments } => {
+            let name = name.to_string();
+            let arguments = arguments.to_vec();
+            Value::CallFun { name, arguments }
+        },
+       _ => Value::None
+    }
+}
 
 pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let re_dec = Regex::new(DECLARE).unwrap();
@@ -16,68 +27,37 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
         Some(data) => {
             let mut libraries = Vec::new();
             let mut instructions = Vec::new();
-            let var_name = data.get(1).unwrap().as_str();
-            let mut type_ = Type::Undefined;
-            let mut value = Value::None;
-            let content = data.get(2).unwrap().as_str();
-            if re_fun.is_match(content) {
-                let fun = data.get(3).unwrap().as_str();
-                if NATIVE_FUNS.contains(&fun) {
-                    match fun {
+            let name = data.get(1).unwrap().as_str().to_string();
+            let content = data.get(2).unwrap().as_str().to_string();
+            let (type_, value) = match content.as_str() {
+                text if re_fun.is_match(text) => {
+                    let fun_name = data.get(3).unwrap().as_str();
+                    let (fun_type, fun_value, mut fun_libraries) = match fun_name {
                         "input" => {
-                            let (mut input_instructions, mut input_libraries) = input::py2code(var_name, content, false).unwrap();
-                            libraries.append(&mut input_libraries);
+                            let (mut input_instructions, input_libraries) = input::py2code(&name, text, false).unwrap();
                             instructions.append(&mut input_instructions);
-                            type_ = Type::String;
+                            (Type::String, Value::None, input_libraries)
                         },
                         "int" => {
-                            let (int_instructions, mut int_libraries) = int::py2code(content).unwrap();
-                            libraries.append(&mut int_libraries);
-                            match &int_instructions[0] {
-                                Instruction::CallFun { name, arguments } => {
-                                    let name = name.to_string();
-                                    let arguments = arguments.to_vec();
-                                    value = Value::CallFun { name, arguments };
-                                },
-                                _ => {}
-                            }
-                            type_ = Type::Int;
+                            let (int_instructions, int_libraries) = int::py2code(text).unwrap();
+                            (Type::Int, instruc2value(&int_instructions[0]), int_libraries)
                         },
-                        _ => {}
-                    };
-                }
-                let option = custom_fun::py2code(body, content);
-                match option {
-                    Some((custom_instructions, mut custom_libraries)) => {
-                        libraries.append(&mut custom_libraries);
-                        let instruction = &custom_instructions[0];
-                        match instruction {
-                            Instruction::CallFun { name, arguments } => {
-                                let name = name.to_string();
-                                let arguments = arguments.to_vec();
-                                value = Value::CallFun { name, arguments };
-                            },
-                           _ => {}
+                        _ => {
+                            let (custom_instructions, custom_libraries) = custom_fun::py2code(body, text).unwrap();
+                            (Type::Undefined, instruc2value(&custom_instructions[0]), custom_libraries)
                         }
-                    },
-                    None => {}
-                }
-            }
-            else {
-                if re_int.is_match(content) {
-                    type_ = Type::Int;
-                }
-                if re_str.is_match(content) {
-                    type_ = Type::String;
-                }
-                value = Value::ConstValue(content.to_string());
-                if re_vec.is_match(content) {
-                    type_ = Type::Vector(Box::new(Type::Undefined));
-                    value = Value::None;
+                    };
+                    libraries.append(&mut fun_libraries);
+                    (fun_type, fun_value)
+                },
+                text if re_int.is_match(text) => (Type::Int, Value::ConstValue(content)),
+                text if re_str.is_match(text) => (Type::String, Value::ConstValue(content)),
+                text if re_vec.is_match(text) => {
                     libraries = get_libraries(&["vector"]);
-                }
-            }
-            let name = var_name.to_string();
+                    (Type::Vector(Box::new(Type::Undefined)), Value::None)
+                },
+                _ => (Type::Undefined, Value::None)
+            };
             let instruction = Instruction::CreateVar { type_, name, value };
             instructions.insert(0, instruction);
             Some((instructions, libraries))
