@@ -1,19 +1,8 @@
 use regex::Regex;
-use crate::py2cpp::{Type, type2cpp, Value, Instruction, Library, get_libraries, INTEGER, STRING, VECTOR, CUSTOM_FUN};
+use crate::py2cpp::{Type, type2cpp, Value, Instruction, instruc2value, Library, get_libraries, INTEGER, STRING, VECTOR, CUSTOM_FUN};
 use crate::instructions::{custom_fun, input, int};
 
 const DECLARE: &str = r##"(?m)^([a-zA-Z][a-zA-Z0-9]*)\s*=\s*(\d+|"[a-zA-Z0-9: ]*"|\[\]|([a-zA-Z][a-zA-Z0-9]*)\(.*\)?)$"##;
-
-fn instruc2value(instruction: &Instruction) -> Value {
-    match instruction {
-        Instruction::CallFun { name, arguments } => {
-            let name = name.to_string();
-            let arguments = arguments.to_vec();
-            Value::CallFun { name, arguments }
-        },
-       _ => Value::None
-    }
-}
 
 pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let re_dec = Regex::new(DECLARE).unwrap();
@@ -30,6 +19,12 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
             let name = data.get(1).unwrap().as_str().to_string();
             let content = data.get(2).unwrap().as_str().to_string();
             let (type_, value) = match content.as_str() {
+                text if re_int.is_match(text) => (Type::Int, Value::ConstValue(content)),
+                text if re_str.is_match(text) => (Type::String, Value::ConstValue(content)),
+                text if re_vec.is_match(text) => {
+                    libraries = get_libraries(&["vector"]);
+                    (Type::Vector(Box::new(Type::Undefined)), Value::None)
+                },
                 text if re_fun.is_match(text) => {
                     let fun_name = data.get(3).unwrap().as_str();
                     let (fun_type, fun_value, mut fun_libraries) = match fun_name {
@@ -49,12 +44,6 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
                     };
                     libraries.append(&mut fun_libraries);
                     (fun_type, fun_value)
-                },
-                text if re_int.is_match(text) => (Type::Int, Value::ConstValue(content)),
-                text if re_str.is_match(text) => (Type::String, Value::ConstValue(content)),
-                text if re_vec.is_match(text) => {
-                    libraries = get_libraries(&["vector"]);
-                    (Type::Vector(Box::new(Type::Undefined)), Value::None)
                 },
                 _ => (Type::Undefined, Value::None)
             };

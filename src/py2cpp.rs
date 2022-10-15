@@ -81,6 +81,17 @@ pub enum Instruction {
     Return { type_: Type, value: String }
 }
 
+pub fn instruc2value(instruction: &Instruction) -> Value {
+    match instruction {
+        Instruction::CallFun { name, arguments } => {
+            let name = name.to_string();
+            let arguments = arguments.to_vec();
+            Value::CallFun { name, arguments }
+        },
+       _ => Value::None
+    }
+}
+
 #[derive(Debug)]
 pub struct Function {
     pub type_: Type,

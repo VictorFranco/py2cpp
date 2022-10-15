@@ -1,5 +1,5 @@
 use regex::Regex;
-use crate::py2cpp::{Type, Argument, Value, Instruction, Library, NATIVE_FUNS, INTEGER, STRING, VARIABLE, CUSTOM_FUN};
+use crate::py2cpp::{Type, Argument, Value, Instruction, instruc2value, Library, NATIVE_FUNS, INTEGER, STRING, VARIABLE, CUSTOM_FUN};
 use crate::instructions::int;
 
 const ARGUMENTS: &str = r##"([+-]?\s*\d+|"[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]*(\(.*\))?),?"##;
@@ -17,13 +17,7 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
             let mut libraries = Vec::new();
             let fun = data.get(1).unwrap().as_str();
             if NATIVE_FUNS.contains(&fun) {
-                return match fun {
-                    "int" => {
-                        let call_int_fun = data.get(0).unwrap().as_str();
-                        int::py2code(call_int_fun)
-                    },
-                    _ => None
-                };
+                return None;
             }
             let arguments = data.get(2).unwrap().as_str();
             let caps_args = re_args.captures_iter(arguments);
@@ -31,50 +25,38 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
             let mut arguments = Vec::new();
 
             for cap in caps_args {
-                let content = cap.get(1).unwrap().as_str();
-                let mut arg_type = Type::Undefined;
-                let mut value = Value::None;
-                if re_int.is_match(content) {
-                    arg_type = Type::Int;
-                    value = Value::ConstValue(content.to_string());
-                }
-                if re_str.is_match(content) {
-                    arg_type = Type::String;
-                    value = Value::ConstValue(content.to_string());
-                }
-                if re_var.is_match(content) {
-                    for instruction in body.iter() {
-                        match instruction {
-                            Instruction::CreateVar { type_, name, value: _ } => {
-                                if content == name {
-                                    arg_type = type_.clone();
-                                }
-                            },
-                            _ => {}
+                let content = cap.get(1).unwrap().as_str().to_string();
+                let (type_, value) = match content.as_str() {
+                    text if re_int.is_match(text) => (Type::Int, Value::ConstValue(content)),
+                    text if re_str.is_match(text) => (Type::String, Value::ConstValue(content)),
+                    text if re_var.is_match(text) => {
+                        let mut arg_type = Type::Undefined;
+                        for instruction in body.iter() {
+                            match instruction {
+                                Instruction::CreateVar { type_, name, value: _ } => {
+                                    if text == name {
+                                        arg_type = type_.clone();
+                                    }
+                                },
+                                _ => {}
+                            }
                         }
-                    }
-                    value = Value::UseVar(content.to_string());
-                }
-                if re_fun.is_match(content) {
-                    let cap = re_fun.captures(content).unwrap();
-                    let fun = cap.get(1).unwrap().as_str();
-                    match fun {
-                        "int" => arg_type = Type::Int,
-                        _ => {}
-                    }
-                    let (instructions, mut fun_libraries) = py2code(body, content).unwrap();
-                    libraries.append(&mut fun_libraries);
-                    match &instructions[0] {
-                        Instruction::CallFun { name, arguments } => {
-                            let name = name.to_string();
-                            let arguments = arguments.to_vec();
-                            value = Value::CallFun { name, arguments };
-                        },
-                        _ => {}
-                    }
-                }
+                        (arg_type, Value::UseVar(content))
+                    },
+                    text if re_fun.is_match(text) => {
+                        let cap = re_fun.captures(text).unwrap();
+                        let fun = cap.get(0).unwrap().as_str();
+                        let fun_name = cap.get(1).unwrap().as_str();
+                        let (arg_type, (instructions, mut fun_libraries)) = match fun_name {
+                            "int" => (Type::Int, int::py2code(fun).unwrap()),
+                            _ => (Type::Undefined, py2code(body, text).unwrap())
+                        };
+                        libraries.append(&mut fun_libraries);
+                        (arg_type, instruc2value(&instructions[0]))
+                    },
+                    _ => (Type::Undefined, Value::None)
+                };
 
-                let type_ = arg_type;
                 arguments.push(
                     Argument { type_, value }
                 );
