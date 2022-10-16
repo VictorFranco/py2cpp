@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate lazy_static;
+
 use std::fs::File;          // file libraries
 use std::io::prelude::*;
 mod constants;

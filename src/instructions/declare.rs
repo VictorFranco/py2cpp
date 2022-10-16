@@ -1,15 +1,9 @@
-use regex::Regex;
 use crate::py2cpp::{Type, type2cpp, Value, Instruction, instruc2value, Library, get_libraries};
-use crate::constants::{DECLARE, INTEGER, STRING, VECTOR, CUSTOM_FUN};
+use crate::constants::{RE_DEC, RE_INT, RE_STR, RE_VEC, RE_FUN};
 use crate::instructions::{custom_fun, input, int};
 
 pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
-    let re_dec = Regex::new(DECLARE).unwrap();
-    let re_int = Regex::new(INTEGER).unwrap();
-    let re_str = Regex::new(STRING).unwrap();
-    let re_vec = Regex::new(VECTOR).unwrap();
-    let re_fun = Regex::new(CUSTOM_FUN).unwrap();
-    let cap_dec = re_dec.captures(content);
+    let cap_dec = RE_DEC.captures(content);
 
     match cap_dec {
         Some(data) => {
@@ -18,13 +12,13 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
             let name = data.get(1).unwrap().as_str().to_string();
             let content = data.get(2).unwrap().as_str().to_string();
             let (type_, value) = match content.as_str() {
-                text if re_int.is_match(text) => (Type::Int, Value::ConstValue(content)),
-                text if re_str.is_match(text) => (Type::String, Value::ConstValue(content)),
-                text if re_vec.is_match(text) => {
+                text if RE_INT.is_match(text) => (Type::Int, Value::ConstValue(content)),
+                text if RE_STR.is_match(text) => (Type::String, Value::ConstValue(content)),
+                text if RE_VEC.is_match(text) => {
                     libraries = get_libraries(&["vector"]);
                     (Type::Vector(Box::new(Type::Undefined)), Value::None)
                 },
-                text if re_fun.is_match(text) => {
+                text if RE_FUN.is_match(text) => {
                     let fun_name = data.get(3).unwrap().as_str();
                     let (fun_type, fun_value, mut fun_libraries) = match fun_name {
                         "input" => {

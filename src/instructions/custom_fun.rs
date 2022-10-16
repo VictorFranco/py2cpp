@@ -1,15 +1,9 @@
-use regex::Regex;
 use crate::py2cpp::{Type, Argument, Value, Instruction, instruc2value, Library};
-use crate::constants::{NATIVE_FUNS, INTEGER, STRING, VARIABLE, CUSTOM_FUN, ARGUMENTS};
+use crate::constants::{NATIVE_FUNS, RE_FUN, RE_ARGS, RE_INT, RE_STR, RE_VAR};
 use crate::instructions::int;
 
 pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
-    let re_fun = Regex::new(CUSTOM_FUN).unwrap();
-    let re_args = Regex::new(ARGUMENTS).unwrap();
-    let re_int = Regex::new(INTEGER).unwrap();
-    let re_str = Regex::new(STRING).unwrap();
-    let re_var = Regex::new(VARIABLE).unwrap();
-    let cap_fun = re_fun.captures(content);
+    let cap_fun = RE_FUN.captures(content);
 
     match cap_fun {
         Some(data) => {
@@ -19,16 +13,16 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
                 return None;
             }
             let arguments = data.get(2).unwrap().as_str();
-            let caps_args = re_args.captures_iter(arguments);
+            let caps_args = RE_ARGS.captures_iter(arguments);
             let name = fun.to_string();
             let mut arguments = Vec::new();
 
             for cap in caps_args {
                 let content = cap.get(1).unwrap().as_str().to_string();
                 let (type_, value) = match content.as_str() {
-                    text if re_int.is_match(text) => (Type::Int, Value::ConstValue(content)),
-                    text if re_str.is_match(text) => (Type::String, Value::ConstValue(content)),
-                    text if re_var.is_match(text) => {
+                    text if RE_INT.is_match(text) => (Type::Int, Value::ConstValue(content)),
+                    text if RE_STR.is_match(text) => (Type::String, Value::ConstValue(content)),
+                    text if RE_VAR.is_match(text) => {
                         let mut arg_type = Type::Undefined;
                         for instruction in body.iter() {
                             match instruction {
@@ -42,8 +36,8 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
                         }
                         (arg_type, Value::UseVar(content))
                     },
-                    text if re_fun.is_match(text) => {
-                        let cap = re_fun.captures(text).unwrap();
+                    text if RE_FUN.is_match(text) => {
+                        let cap = RE_FUN.captures(text).unwrap();
                         let fun = cap.get(0).unwrap().as_str();
                         let fun_name = cap.get(1).unwrap().as_str();
                         let (arg_type, (instructions, mut fun_libraries)) = match fun_name {

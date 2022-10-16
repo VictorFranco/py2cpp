@@ -1,6 +1,5 @@
-use regex::Regex;
 use crate::instructions::{print, input, custom_fun, declare, r#return};
-use crate::constants::{HEAD_DEC_FUN, PARAMS, INSTRUCTIONS, MAIN, SHIFT_LEFT, DEC_FUN};
+use crate::constants::{RE_HEAD_DEC_FUN, RE_DEC_FUN, RE_PARAMS, RE_INSTRUCTIONS, RE_SHIFT_LEFT, RE_MAIN};
 use crate::infer;
 
 #[derive(Debug, Clone)]
@@ -107,13 +106,11 @@ impl Code {
     }
 
     fn get_header_info(header: &str) -> (String, Vec<Param>) {
-        let re = Regex::new(HEAD_DEC_FUN).unwrap();
-        let cap = re.captures(header).unwrap();
+        let cap = RE_HEAD_DEC_FUN.captures(header).unwrap();
         let name = cap.get(1).unwrap().as_str().to_string();    // get function name
 
         let params = cap.get(2).unwrap().as_str();
-        let re = Regex::new(PARAMS).unwrap();
-        let caps = re.captures_iter(&params);
+        let caps = RE_PARAMS.captures_iter(&params);
         let mut params = Vec::new();
 
         for cap in caps {
@@ -128,8 +125,7 @@ impl Code {
     }
 
     fn get_instructions(self: &mut Code, body: String) -> Vec<Instruction> {
-        let re = Regex::new(INSTRUCTIONS).unwrap();
-        let caps = re.captures_iter(&body);
+        let caps = RE_INSTRUCTIONS.captures_iter(&body);
         let mut body: Vec<Instruction> = Vec::new();
 
         for cap in caps {
@@ -154,8 +150,7 @@ impl Code {
     }
 
     fn get_main(self: &mut Code, py_code: &str) -> Function {
-        let re = Regex::new(MAIN).unwrap();
-        let caps = re.captures_iter(py_code);
+        let caps = RE_MAIN.captures_iter(py_code);
         let mut body = String::new();
 
         for cap in caps {
@@ -180,8 +175,7 @@ impl Code {
     }
 
     fn shift_code_left(body: &str) -> String {
-        let re = Regex::new(SHIFT_LEFT).unwrap();
-        let caps = re.captures_iter(&body);
+        let caps = RE_SHIFT_LEFT.captures_iter(&body);
         let mut body = String::new();
 
         for cap in caps {
@@ -193,8 +187,7 @@ impl Code {
     }
 
     fn py2code(py_code: &str) -> Code {
-        let re = Regex::new(DEC_FUN).unwrap();
-        let caps = re.captures_iter(py_code);
+        let caps = RE_DEC_FUN.captures_iter(py_code);
         let mut code = Self::create_code();
 
         for cap in caps {

@@ -1,11 +1,9 @@
-use regex::Regex;
 use crate::py2cpp::{Type, Argument, Value, Instruction, Library, get_libraries};
-use crate::constants::INPUT;
+use crate::constants::RE_INPUT;
 use crate::instructions::print;
 
 pub fn py2code(var_name: &str, content: &str, newline: bool) -> Option<(Vec<Instruction>, Vec<Library>)> {
-    let re_input = Regex::new(INPUT).unwrap();
-    let cap_input = re_input.captures(content);
+    let cap_input = RE_INPUT.captures(content);
 
     match cap_input {
         Some(data) => {
