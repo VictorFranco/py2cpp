@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use crate::py2cpp::{Code, Argument, Instruction, Type, NATIVE_FUNS, Value};
+use crate::py2cpp::{Code, Argument, Instruction, Type, Value};
+use crate::constants::NATIVE_FUNS;
 
 fn store_arg_types(name: &String, called_funs: &mut Vec<String>, fun_types: &mut Vec<Vec<Type>>, arguments: &Vec<Argument>) {
     let mut arg_types = Vec::new();

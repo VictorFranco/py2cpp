@@ -1,8 +1,6 @@
 use regex::Regex;
-use crate::py2cpp::{Type, Argument, Value, Instruction, Library, get_libraries, INTEGER, STRING, VARIABLE};
-
-const PRINT: &str = r##"^print\((.*)\)[^"]*$"##;
-const MESSAGES: &str = r##"("[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]+),?"##;
+use crate::py2cpp::{Type, Argument, Value, Instruction, Library, get_libraries};
+use crate::constants::{PRINT, MESSAGES, INTEGER, STRING, VARIABLE};
 
 pub fn py2code(content: &str, newline: bool) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let re_print = Regex::new(PRINT).unwrap();

@@ -1,7 +1,6 @@
 use regex::Regex;
 use crate::py2cpp::{Type, Argument, Value, Instruction, Library, get_libraries};
-
-const INT: &str = r##"^int\((.*)\)$"##;
+use crate::constants::INT;
 
 pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let re_int = Regex::new(INT).unwrap();

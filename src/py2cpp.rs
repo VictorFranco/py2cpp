@@ -1,34 +1,9 @@
 use regex::Regex;
 use crate::instructions::{print, input, custom_fun, declare, r#return};
+use crate::constants::{HEAD_DEC_FUN, PARAMS, INSTRUCTIONS, MAIN, SHIFT_LEFT, DEC_FUN};
 use crate::infer;
 
-// head of declared function
-const HEAD_DEC_FUN: &str = r"(?m)def\s([a-zA-Z][a-zA-Z_-]*)\(((([a-zA-Z][a-zA-Z0-9]*),?)*)\):";
-
-// declared function with body
-const DEC_FUN: &str = r"(?m)def\s[a-zA-Z][a-zA-Z_-]*\(.*\):\n((\s{4,}.*\n)*)";
-
-const PARAMS: &str = r"[a-zA-Z][a-zA-Z0-9]*";
-
-const INSTRUCTIONS: &str = r"(?m)(.*)\n";
-
-const SHIFT_LEFT: &str = r"(?m)\s{4}(.*)\n";
-
-const MAIN: &str = r"(?m)^\S{4,}.*$";
-
-pub const NATIVE_FUNS: [&str; 3] = ["print", "input", "int"];
-
-pub const INTEGER: &str = r"^[+-]?\s*(\d+)$";
-
-pub const STRING: &str = r##"^"[a-zA-Z0-9: ]*"$"##;
-
-pub const VECTOR: &str = r"^\[\]$";
-
-pub const VARIABLE: &str = r"^[a-zA-Z][a-zA-Z0-9]*$";
-
-pub const CUSTOM_FUN: &str = r##"^([a-zA-Z][a-zA-Z0-9]*)\((.*)\)[^"]*$"##;
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone)]
 pub enum Type {
     Int,
     String,

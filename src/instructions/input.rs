@@ -1,8 +1,7 @@
 use regex::Regex;
 use crate::py2cpp::{Type, Argument, Value, Instruction, Library, get_libraries};
+use crate::constants::INPUT;
 use crate::instructions::print;
-
-const INPUT: &str = r##"^input\((.*)\)$"##;
 
 pub fn py2code(var_name: &str, content: &str, newline: bool) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let re_input = Regex::new(INPUT).unwrap();

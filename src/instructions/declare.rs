@@ -1,8 +1,7 @@
 use regex::Regex;
-use crate::py2cpp::{Type, type2cpp, Value, Instruction, instruc2value, Library, get_libraries, INTEGER, STRING, VECTOR, CUSTOM_FUN};
+use crate::py2cpp::{Type, type2cpp, Value, Instruction, instruc2value, Library, get_libraries};
+use crate::constants::{DECLARE, INTEGER, STRING, VECTOR, CUSTOM_FUN};
 use crate::instructions::{custom_fun, input, int};
-
-const DECLARE: &str = r##"(?m)^([a-zA-Z][a-zA-Z0-9]*)\s*=\s*(\d+|"[a-zA-Z0-9: ]*"|\[\]|([a-zA-Z][a-zA-Z0-9]*)\(.*\)?)$"##;
 
 pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let re_dec = Regex::new(DECLARE).unwrap();

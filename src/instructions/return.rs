@@ -1,7 +1,6 @@
 use regex::Regex;
-use crate::py2cpp::{Type, Instruction, Library, INTEGER, STRING, VECTOR, VARIABLE};
-
-const RETURN: &str = r"^return (.*)$";
+use crate::py2cpp::{Type, Instruction, Library};
+use crate::constants::{RETURN, INTEGER, STRING, VECTOR, VARIABLE};
 
 pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let re_return = Regex::new(RETURN).unwrap();
