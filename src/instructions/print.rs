@@ -20,24 +20,16 @@ pub fn py2code(content: &str, newline: bool) -> Option<(Vec<Instruction>, Vec<Li
             let mut arguments = Vec::new();
 
             for cap in caps_msgs {
-                let content = cap.get(1).unwrap().as_str();
-                let mut type_ = Type::Undefined;
-                let value = if re_var.is_match(content) {
-                    Value::UseVar(content.to_string())
-                }
-                else {
-                    if re_int.is_match(content) {
-                        type_ = Type::Int;
-                    }
-                    if re_str.is_match(content) {
-                        type_ = Type::String;
-                    }
-                    Value::ConstValue(content.to_string())
+                let content = cap.get(1).unwrap().as_str().to_string();
+                let (type_, value) = match content.as_str() {
+                    text if re_var.is_match(text) => (Type::Undefined, Value::UseVar(content)),
+                    text if re_int.is_match(text) => (Type::Int, Value::ConstValue(content)),
+                    text if re_str.is_match(text) => (Type::String, Value::ConstValue(content)),
+                    _ => (Type::Undefined, Value::None)
                 };
                 arguments.push(
                     Argument { type_, value }
                 );
-
             }
 
             let value = Value::ConstValue(newline.to_string());
