@@ -13,31 +13,27 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
 
     match cap_return {
         Some(data) => {
-            let return_value = data.get(1).unwrap().as_str();
-            let mut return_type_ = Type::Undefined;
-            if re_int.is_match(return_value) {
-                return_type_ = Type::Int;
-            }
-            if re_str.is_match(return_value) {
-                return_type_ = Type::String;
-            }
-            if re_vec.is_match(return_value) {
-                return_type_ = Type::Vector(Box::new(Type::Undefined));
-            }
-            if re_var.is_match(return_value) {
-                for instruction in body.iter() {
-                    match instruction {
-                        Instruction::CreateVar { type_, name, value: _ } => {
-                            if return_value == name {
-                                return_type_ = type_.clone();
-                            }
-                        },
-                        _ => {}
+            let value = data.get(1).unwrap().as_str().to_string();
+            let type_ = match value.as_str() {
+                text if re_int.is_match(text) => Type::Int,
+                text if re_str.is_match(text) => Type::String,
+                text if re_vec.is_match(text) => Type::Vector(Box::new(Type::Undefined)),
+                text if re_var.is_match(text) => {
+                    let mut return_type_ = Type::Undefined;
+                    for instruction in body.iter() {
+                        match instruction {
+                            Instruction::CreateVar { type_, name, value: _ } => {
+                                if text == name {
+                                    return_type_ = type_.clone();
+                                }
+                            },
+                            _ => {}
+                        }
                     }
-                }
-            }
-            let type_ = return_type_;
-            let value = return_value.to_string();
+                    return_type_
+                },
+                _ => Type::Undefined
+            };
             let instruction = Instruction::Return { type_, value };
             Some((vec![instruction], vec![]))
         },
