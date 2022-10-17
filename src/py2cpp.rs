@@ -2,12 +2,13 @@ use crate::instructions::{print, input, custom_fun, declare, r#return};
 use crate::constants::{RE_HEAD_DEC_FUN, RE_DEC_FUN, RE_PARAMS, RE_INSTRUCTIONS, RE_SHIFT_LEFT, RE_MAIN};
 use crate::infer;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     Int,
     String,
     Void,
     Vector(Box<Type>),
+    Generic,
     Undefined
 }
 
@@ -21,6 +22,7 @@ pub fn type2cpp(type_: &Type) -> String {
             Type::String => "string",
             Type::Void => "void",
             Type::Undefined => "undefined",
+            Type::Generic => "T",
             _ => ""
         }.to_string()
     }
@@ -217,16 +219,22 @@ impl Code {
     }
 
     fn fun2cpp(function: &Function) -> String {
-
         // generate function header
         let type_ = type2cpp(&function.type_);
+        let mut there_are_generics = false;
         let mut header = format!("{} {}(", type_, function.name);
         for (index, param) in function.params.iter().enumerate() {
             if index > 0 {
                 header.push_str(", ");
             }
+            if param.type_ == Type::Generic {
+                there_are_generics = true;
+            }
             let type_ = type2cpp(&param.type_);
             header = format!("{}{} {}", header, type_, param.name);
+        }
+        if there_are_generics {
+            header = format!("template <typename T>\n\n{}", header);
         }
 
         // generate function body

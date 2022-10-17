@@ -52,11 +52,11 @@ pub fn param_types(code: &mut Code) {
         for (call_index, call_name) in called_funs.iter().enumerate() {
             if &fun_name == call_name {
                 for (arg_index, mut param) in fun.params.iter_mut().enumerate() {
-                    match param.type_ {
-                        Type::Undefined => {
-                            param.type_ = fun_types[call_index][arg_index].clone();
-                        },
-                        _ => {}
+                    let arg_type = fun_types[call_index][arg_index].clone();  // argument type
+                    param.type_ = match &param.type_ {
+                        Type::Undefined => arg_type,
+                        param_type if param_type != &arg_type => Type::Generic,
+                        _ => param.type_.clone()
                     }
                 }
             }
