@@ -1,9 +1,10 @@
+use std::collections::HashMap;
 use crate::py2cpp::{Type, Argument, Value, Instruction, instruc2value, Library};
 use crate::constants::{NATIVE_FUNS, RE_FUN, RE_ARGS, RE_INT, RE_STR, RE_VAR};
 use crate::instructions::int;
-use crate::infer::get_var_type;
+use crate::infer::{get_var_type, get_fun_type};
 
-pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_fun = RE_FUN.captures(content);
 
     match cap_fun {
@@ -30,7 +31,7 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
                         let fun_name = cap.get(1).unwrap().as_str();
                         let (arg_type, (instructions, mut fun_libraries)) = match fun_name {
                             "int" => (Type::Int, int::py2code(fun).unwrap()),
-                            _ => (Type::Undefined, py2code(body, text).unwrap())
+                            _ => (get_fun_type(fun_types, fun_name), py2code(body, fun_types, text).unwrap())
                         };
                         libraries.append(&mut fun_libraries);
                         (arg_type, instruc2value(&instructions[0]))

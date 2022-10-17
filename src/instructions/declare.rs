@@ -1,8 +1,10 @@
+use std::collections::HashMap;
 use crate::py2cpp::{Type, type2cpp, Value, Instruction, instruc2value, Library, get_libraries};
 use crate::constants::{RE_DEC, RE_INT, RE_STR, RE_VEC, RE_FUN};
 use crate::instructions::{custom_fun, input, int};
+use crate::infer::get_fun_type;
 
-pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_dec = RE_DEC.captures(content);
 
     match cap_dec {
@@ -31,8 +33,8 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
                             (Type::Int, instruc2value(&int_instructions[0]), int_libraries)
                         },
                         _ => {
-                            let (custom_instructions, custom_libraries) = custom_fun::py2code(body, text).unwrap();
-                            (Type::Undefined, instruc2value(&custom_instructions[0]), custom_libraries)
+                            let (custom_instructions, custom_libraries) = custom_fun::py2code(body, fun_types, text).unwrap();
+                            (get_fun_type(fun_types, fun_name), instruc2value(&custom_instructions[0]), custom_libraries)
                         }
                     };
                     libraries.append(&mut fun_libraries);

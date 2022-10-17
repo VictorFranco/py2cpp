@@ -127,13 +127,14 @@ impl Code {
     fn get_instructions(self: &mut Code, body: String) -> Vec<Instruction> {
         let caps = RE_INSTRUCTIONS.captures_iter(&body);
         let mut body: Vec<Instruction> = Vec::new();
+        let fun_types = infer::get_fun_types(self);
 
         for cap in caps {
             let content = cap.get(1).unwrap().as_str();
             let results = [
                 print::py2code(content, true),
-                declare::py2code(&mut body, content),
-                custom_fun::py2code(&mut body, content),
+                declare::py2code(&mut body, &fun_types, content),
+                custom_fun::py2code(&mut body, &fun_types, content),
                 r#return::py2code(&mut body, content)
             ];
             for result in results {
@@ -195,8 +196,8 @@ impl Code {
             let body = Self::shift_code_left(body);
             let header = cap.get(0).unwrap().as_str();
 
-            let type_: Type = Type::Undefined;
-            let body: Vec<Instruction> = Self::get_instructions(&mut code, body);
+            let mut body: Vec<Instruction> = Self::get_instructions(&mut code, body);
+            let type_: Type = infer::get_return_type(&mut body);
             let (name, params): (String, Vec<Param>) = Self::get_header_info(header);
 
             code.functions.push(
@@ -207,9 +208,7 @@ impl Code {
         let main: Function = Self::get_main(&mut code, py_code);
         code.functions.push(main);
 
-        infer::return_types(&mut code);
         infer::param_types(&mut code);
-        infer::var_types(&mut code);
 
         code.libraries.sort();
         code.libraries.dedup();         // remove duplicate libraries

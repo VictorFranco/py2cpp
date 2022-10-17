@@ -64,47 +64,28 @@ pub fn param_types(code: &mut Code) {
     }
 }
 
-pub fn return_types(code: &mut Code) {
-    for fun in code.functions.iter_mut() {
-        let mut there_is_return = false;
-        for instruction in fun.body.iter() {
-            match instruction {
-                Instruction::Return { type_, value: _ } => {
-                    there_is_return = true;
-                    fun.type_ = type_.clone();
-                },
-                _ => {}
-            }
-        }
-        if !there_is_return {
-            fun.type_ = Type::Void;
+pub fn get_return_type(body: &mut Vec<Instruction>) -> Type {
+    for instruction in body.iter() {
+        match instruction {
+            Instruction::Return { type_, value: _ } => {
+                return type_.clone();
+            },
+            _ => {}
         }
     }
+    Type::Void
 }
 
-pub fn var_types(code: &mut Code) {
+pub fn get_fun_types(code: &mut Code) -> HashMap<String, Type> {
     let mut return_types = HashMap::new();
     for fun in code.functions.iter() {
         return_types.insert(fun.name.clone(), fun.type_.clone());
     }
-    for fun in code.functions.iter_mut() {
-        for instruction in fun.body.iter_mut() {
-            match instruction {
-                Instruction::CreateVar { type_, name: _, value } => {
-                    match value {
-                        Value::CallFun { name, arguments: _ } => {
-                            match return_types.get(name) {
-                                Some(data) => *type_ = data.clone(),
-                                None => {}
-                            }
-                        },
-                        _ => {}
-                    }
-                },
-                _ => {}
-            }
-        }
-    }
+    return_types
+}
+
+pub fn get_fun_type(fun_types: &HashMap<String, Type>, fun_name: &str) -> Type {
+    fun_types.get(fun_name).unwrap().clone()
 }
 
 pub fn get_var_type(var_name: &str, body: &mut Vec<Instruction>) -> Type {
