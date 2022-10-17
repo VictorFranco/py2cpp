@@ -1,6 +1,7 @@
 use crate::py2cpp::{Type, Argument, Value, Instruction, instruc2value, Library};
 use crate::constants::{NATIVE_FUNS, RE_FUN, RE_ARGS, RE_INT, RE_STR, RE_VAR};
 use crate::instructions::int;
+use crate::infer::get_var_type;
 
 pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_fun = RE_FUN.captures(content);
@@ -22,20 +23,7 @@ pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instru
                 let (type_, value) = match content.as_str() {
                     text if RE_INT.is_match(text) => (Type::Int, Value::ConstValue(content)),
                     text if RE_STR.is_match(text) => (Type::String, Value::ConstValue(content)),
-                    text if RE_VAR.is_match(text) => {
-                        let mut arg_type = Type::Undefined;
-                        for instruction in body.iter() {
-                            match instruction {
-                                Instruction::CreateVar { type_, name, value: _ } => {
-                                    if text == name {
-                                        arg_type = type_.clone();
-                                    }
-                                },
-                                _ => {}
-                            }
-                        }
-                        (arg_type, Value::UseVar(content))
-                    },
+                    text if RE_VAR.is_match(text) => (get_var_type(text, body), Value::UseVar(content)),
                     text if RE_FUN.is_match(text) => {
                         let cap = RE_FUN.captures(text).unwrap();
                         let fun = cap.get(0).unwrap().as_str();

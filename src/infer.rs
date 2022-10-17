@@ -106,3 +106,18 @@ pub fn var_types(code: &mut Code) {
         }
     }
 }
+
+pub fn get_var_type(var_name: &str, body: &mut Vec<Instruction>) -> Type {
+    let mut result = Type::Undefined;
+    for instruction in body.iter() {
+        match instruction {
+            Instruction::CreateVar { type_, name, value: _ } => {
+                if var_name == name {
+                    result = type_.clone();
+                }
+            },
+            _ => {}
+        }
+    }
+    result
+}
