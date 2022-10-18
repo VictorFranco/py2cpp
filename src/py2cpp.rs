@@ -1,4 +1,4 @@
-use crate::instructions::{print, input, custom_fun, declare, r#return};
+use crate::instructions::{print, input, custom_fun, declare, r#loop, r#return};
 use crate::constants::{RE_HEAD_DEC_FUN, RE_DEC_FUN, RE_PARAMS, RE_INSTRUCTIONS, RE_SHIFT_LEFT, RE_MAIN};
 use crate::infer;
 
@@ -53,7 +53,7 @@ pub enum Value {
 pub enum Instruction {
     CreateVar { type_: Type, name: String, value: Value },
     CallFun { name: String, arguments: Vec<Argument> },
-    Loop { start: String, end: String, content: Vec<Instruction> },
+    Loop { counter:String, start: Value, end: Value, content: Vec<Instruction> },
     Return { type_: Type, value: String }
 }
 
@@ -137,6 +137,7 @@ impl Code {
                 print::py2code(content, true),
                 declare::py2code(&mut body, &fun_types, content),
                 custom_fun::py2code(&mut body, &fun_types, content),
+                r#loop::py2code(&mut body, &fun_types, content),
                 r#return::py2code(&mut body, content)
             ];
             for result in results {
@@ -252,10 +253,12 @@ impl Code {
                 Instruction::CreateVar { type_, name, value } => {
                     declare::code2cpp(type_, name, value)
                 },
+                Instruction::Loop { counter, start, end, content } => {
+                    r#loop::code2cpp(counter, start, end, content)
+                },
                 Instruction::Return { type_: _, value } => {
                     r#return::code2cpp(value)
-                },
-                _ => String::new()
+                }
             };
             body = format!("{}    {}\n", body, result);
         }
