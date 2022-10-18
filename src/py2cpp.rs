@@ -277,6 +277,7 @@ impl Code {
         for function in self.functions.iter() {
             result = format!("{}{}\n", result, Self::fun2cpp(function));
         }
+        result.pop();       // remove last blank line
         result
     }
 
