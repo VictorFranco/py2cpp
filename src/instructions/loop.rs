@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use crate::py2cpp::{Type, Value, Instruction, instruc2value, Library};
 use crate::constants::{RE_LOOP, RE_FUN, RE_INT, RE_VAR};
-use crate::instructions::custom_fun;
+use crate::instructions::{custom_fun, len};
 
 pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_return = RE_LOOP.captures(content);
@@ -19,7 +19,13 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
                     text if RE_INT.is_match(text) => Value::ConstValue(param.to_string()),
                     text if RE_VAR.is_match(text) => Value::UseVar(param.to_string()),
                     text if RE_FUN.is_match(text) => {
-                        let (instructions, _libraries) = custom_fun::py2code(body, fun_types, text).unwrap();
+                        let cap_fun = RE_FUN.captures(text).unwrap();
+                        let fun = cap_fun.get(0).unwrap().as_str();
+                        let fun_name = cap_fun.get(1).unwrap().as_str();
+                        let (instructions, _libraries) = match fun_name {
+                            "len" => len::py2code(fun).unwrap(),
+                            _ => custom_fun::py2code(body, fun_types, text).unwrap()
+                        };
                         instruc2value(&instructions[0])
                     }
                     _ => Value::None
@@ -41,7 +47,10 @@ pub fn code2cpp(counter: &String, start: &Value, end: &Value, _content: &Vec<Ins
         values[index] = match param {
             Value::ConstValue(data) | Value::UseVar(data) => data.to_string(),
             Value::CallFun { name, arguments } => {
-                custom_fun::code2cpp(name, arguments, false)
+                match name.as_str() {
+                    "len" => len::code2cpp(&arguments[0]),
+                    _ => custom_fun::code2cpp(name, arguments, false)
+                }
             }
             _ => String::new()
         };

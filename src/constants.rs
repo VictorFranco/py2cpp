@@ -20,9 +20,10 @@ const ARGUMENTS: &str = r##"([+-]?\s*\d+|"[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]*(
 const DECLARE: &str = r##"(?m)^([a-zA-Z][a-zA-Z0-9]*)\s*=\s*(\d+|"[a-zA-Z0-9: ]*"|\[\]|([a-zA-Z][a-zA-Z0-9]*)(\(.*\))?)$"##;
 const INT_FUN: &str = r##"^int\((.*)\)$"##;
 const LOOP: &str = r"^for ([a-zA-Z][a-zA-Z0-9]*) in range\(\s*(.*)\s*,\s*(.*)\s*\):$";
+const LEN: &str = r"^len\((.*)\)$";
 const RETURN: &str = r"^return (.*)$";
 
-pub const NATIVE_FUNS: [&str; 3] = ["print", "input", "int"];
+pub const NATIVE_FUNS: [&str; 4] = ["print", "input", "int", "len"];
 
 lazy_static! {
     pub static ref RE_HEAD_DEC_FUN: Regex = Regex::new(HEAD_DEC_FUN).unwrap();
@@ -45,5 +46,6 @@ lazy_static! {
     pub static ref RE_DEC: Regex = Regex::new(DECLARE).unwrap();
     pub static ref RE_INT_FUN: Regex = Regex::new(INT_FUN).unwrap();
     pub static ref RE_LOOP: Regex = Regex::new(LOOP).unwrap();
+    pub static ref RE_LEN: Regex = Regex::new(LEN).unwrap();
     pub static ref RE_RETURN: Regex = Regex::new(RETURN).unwrap();
 }

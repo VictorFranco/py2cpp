@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use crate::py2cpp::{Type, Argument, Value, Instruction, instruc2value, Library};
 use crate::constants::{NATIVE_FUNS, RE_FUN, RE_ARGS, RE_INT, RE_STR, RE_VAR};
-use crate::instructions::int;
+use crate::instructions::{int, len};
 use crate::infer::{get_var_type, get_fun_type};
 
 pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
@@ -31,6 +31,7 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
                         let fun_name = cap.get(1).unwrap().as_str();
                         let (arg_type, (instructions, mut fun_libraries)) = match fun_name {
                             "int" => (Type::Int, int::py2code(fun).unwrap()),
+                            "len" => (Type::Int, len::py2code(fun).unwrap()),
                             _ => (get_fun_type(fun_types, fun_name), py2code(body, fun_types, text).unwrap())
                         };
                         libraries.append(&mut fun_libraries);
@@ -64,6 +65,7 @@ pub fn code2cpp(name: &String, arguments: &Vec<Argument>, semicolon: bool) -> St
             Value::CallFun { name, arguments } => {
                 match name.as_str() {
                     "int" => format!("{}{}", result, int::code2cpp(&arguments[0])),
+                    "len" => format!("{}{}", result, len::code2cpp(&arguments[0])),
                     _ => format!("{}{}", result, code2cpp(name, arguments, false))
                 }
             }
