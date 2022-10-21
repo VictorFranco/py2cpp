@@ -3,7 +3,7 @@ use regex::Regex;
 const HEAD_DEC_FUN: &str = r"(?m)def\s([a-zA-Z][a-zA-Z_-]*)\(((([a-zA-Z][a-zA-Z0-9]*),?)*)\):";
 const DEC_FUN: &str = r"(?m)def\s[a-zA-Z][a-zA-Z_-]*\(.*\):\n((\s{4,}.*\n)*)";
 const PARAMS: &str = r"[a-zA-Z][a-zA-Z0-9]*";
-const INSTRUCTIONS: &str = r"(?m)(.*)\n";
+const INSTRUCTIONS: &str = r"(?m)(for.*((\n\s{4,}.*)*)|(.*))\n";
 const SHIFT_LEFT: &str = r"(?m)\s{4}(.*)\n";
 const MAIN: &str = r"(?m)^\S{4,}.*$";
 // data types
@@ -19,7 +19,7 @@ const CUSTOM_FUN: &str = r##"^([a-zA-Z][a-zA-Z0-9]*)\((.*)\)[^"]*$"##;
 const ARGUMENTS: &str = r##"([+-]?\s*\d+|"[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]*(\(.*\))?),?"##;
 const DECLARE: &str = r##"(?m)^([a-zA-Z][a-zA-Z0-9]*)\s*=\s*(\d+|"[a-zA-Z0-9: ]*"|\[\]|([a-zA-Z][a-zA-Z0-9]*)(\(.*\))?)$"##;
 const INT_FUN: &str = r##"^int\((.*)\)$"##;
-const LOOP: &str = r"^for ([a-zA-Z][a-zA-Z0-9]*) in range\(\s*(.*)\s*,\s*(.*)\s*\):$";
+const LOOP: &str = r"(?m)for ([a-zA-Z][a-zA-Z0-9]*) in range\(\s*(.*)\s*,\s*(.*)\s*\):((\n.*)*)";
 const LEN: &str = r"^len\((.*)\)$";
 const RETURN: &str = r"^return (.*)$";
 

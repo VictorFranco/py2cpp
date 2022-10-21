@@ -32,7 +32,9 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
                 };
             }
             let [start, end] = values;
-            let content = vec![];
+            let value = data.get(4).unwrap().as_str().to_string();
+            let instruction = Instruction::Return { type_: Type::Undefined, value };
+            let content = vec![instruction];
             let instruction = Instruction::Loop { counter, start, end, content };
             Some((vec![instruction], vec![]))
         },
@@ -40,7 +42,7 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
     }
 }
 
-pub fn code2cpp(counter: &String, start: &Value, end: &Value, _content: &Vec<Instruction>) -> String {
+pub fn code2cpp(counter: &String, start: &Value, end: &Value, content: &Vec<Instruction>) -> String {
     let params = [start, end];
     let mut values = [String::new(), String::new()];
     for (index, param) in params.iter().enumerate() {
@@ -56,5 +58,10 @@ pub fn code2cpp(counter: &String, start: &Value, end: &Value, _content: &Vec<Ins
         };
     }
     let [start, end] = values;
-    format!("for (int {} = {}; {} < {}; {}++) {{}}", counter, start, counter, end, counter)
+    match &content[0] {
+        Instruction::Return { type_: _, value } => {
+            format!("for (int {} = {}; {} < {}; {}++) {{{}\n    }}", counter, start, counter, end, counter, value)
+        },
+        _ => String::new()
+    }
 }
