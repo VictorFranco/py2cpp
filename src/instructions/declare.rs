@@ -21,7 +21,8 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
                     (Type::Vector(Box::new(Type::Undefined)), Value::None)
                 },
                 text if RE_FUN.is_match(text) => {
-                    let fun_name = data.get(3).unwrap().as_str();
+                    let cap_fun = RE_FUN.captures(text).unwrap();
+                    let fun_name = cap_fun.get(1).unwrap().as_str();
                     let (fun_type, fun_value, mut fun_libraries) = match fun_name {
                         "input" => {
                             let (mut input_instructions, input_libraries) = input::py2code(&name, text, false).unwrap();
@@ -44,7 +45,7 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
                     libraries.append(&mut fun_libraries);
                     (fun_type, fun_value)
                 },
-                _ => (Type::Undefined, Value::None)
+                _ => (Type::Undefined, Value::ConstValue(content))
             };
             let instruction = Instruction::CreateVar { type_, name, value };
             instructions.insert(0, instruction);
