@@ -1,7 +1,7 @@
 use std::collections::HashMap;
-use crate::py2cpp::{Type, Value, Instruction, Library, Code, instruc2value};
+use crate::py2cpp::{Type, Value, Instruction, Library, Code, instruc2value, insts2cpp};
 use crate::constants::{RE_LOOP, RE_FUN, RE_INT, RE_VAR};
-use crate::instructions::{print, input, custom_fun, declare, len, r#loop, r#return};
+use crate::instructions::{custom_fun, len};
 
 pub fn py2code(code: &mut Code, body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_return = RE_LOOP.captures(content);
@@ -58,33 +58,11 @@ pub fn code2cpp(counter: &String, start: &Value, end: &Value, content: &Vec<Inst
         };
     }
     let [start, end] = values;
-    let mut result = format!("for (int {} = {}; {} < {}; {}++)", counter, start, counter, end, counter);
-    result.push_str( " {\n");
-    for instruction in content {
-        for _ in 0..tabs {
-            result.push_str( "    ");
-        }
-        let cpp_instruction = match instruction {
-            Instruction::CallFun { name, arguments } => {
-                let options = [
-                    print::code2cpp(name, arguments),
-                    input::code2cpp(name, arguments),
-                    custom_fun::code2cpp(name, arguments, true)
-                ];
-                options.join("")
-            },
-            Instruction::CreateVar { type_, name, value } => {
-                declare::code2cpp(type_, name, value)
-            },
-            Instruction::Loop { counter, start, end, content } => {
-                r#loop::code2cpp(counter, start, end, content, tabs + 1)
-            },
-            Instruction::Return { type_: _, value } => {
-                r#return::code2cpp(value)
-            }
-        };
-        result = format!("{}{}\n", result, cpp_instruction);
+    let header = format!("for (int {} = {}; {} < {}; {}++)", counter, start, counter, end, counter);
+    let mut body = insts2cpp(content, tabs);
+    for _ in 1..tabs {
+        body.push_str( "    ");
     }
-    result.push_str( "    }");
-    result
+
+    format!("{} {{\n{}}}", header, body)
 }
