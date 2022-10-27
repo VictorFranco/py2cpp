@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use crate::py2cpp::{Type, Value, Instruction, Library, Code, instruc2value, insts2cpp};
+use crate::types::{Type, Value, Instruction, Library, Code};
+use crate::py2cpp::{instruc2value, insts2cpp};
 use crate::constants::{RE_LOOP, RE_FUN, RE_INT, RE_VAR};
 use crate::instructions::{custom_fun, len};
 

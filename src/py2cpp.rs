@@ -1,16 +1,7 @@
-use crate::instructions::{print, input, custom_fun, declare, r#loop, r#return};
+use crate::types::{Type, Param, Instruction, Value, Function, Library, Code};
 use crate::constants::{RE_HEAD_DEC_FUN, RE_DEC_FUN, RE_PARAMS, RE_INSTRUCTIONS, RE_SHIFT_LEFT, RE_MAIN};
+use crate::instructions::{print, input, custom_fun, declare, r#loop, r#return};
 use crate::infer;
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Type {
-    Int,
-    String,
-    Void,
-    Vector(Box<Type>),
-    Generic,
-    Undefined
-}
 
 pub fn type2cpp(type_: &Type) -> String {
     match type_ {
@@ -26,34 +17,6 @@ pub fn type2cpp(type_: &Type) -> String {
             _ => ""
         }.to_string()
     }
-}
-
-#[derive(Debug)]
-pub struct Param {
-    pub type_: Type,
-    pub name: String
-}
-
-#[derive(Debug, Clone)]
-pub struct Argument {
-    pub type_: Type,
-    pub value: Value
-}
-
-#[derive(Debug, Clone)]
-pub enum Value {
-    ConstValue(String),
-    UseVar(String),
-    CallFun { name: String, arguments: Vec<Argument> },
-    None
-}
-
-#[derive(Debug)]
-pub enum Instruction {
-    CreateVar { type_: Type, name: String, value: Value },
-    CallFun { name: String, arguments: Vec<Argument> },
-    Loop { counter:String, start: Value, end: Value, content: Vec<Instruction> },
-    Return { type_: Type, value: String }
 }
 
 pub fn instruc2value(instruction: &Instruction) -> Value {
@@ -97,20 +60,6 @@ pub fn insts2cpp(instructions: &Vec<Instruction>, tabs: u32) -> String {
     result
 }
 
-
-#[derive(Debug)]
-pub struct Function {
-    pub type_: Type,
-    pub name: String,
-    pub params: Vec<Param>,
-    pub body: Vec<Instruction>
-}
-
-#[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct Library {
-    name: String
-}
-
 pub fn get_libraries(names: &[&str]) -> Vec<Library> {
     let mut libraries = Vec::new();
     for name in names.iter() {
@@ -120,12 +69,6 @@ pub fn get_libraries(names: &[&str]) -> Vec<Library> {
         );
     }
     libraries
-}
-
-#[derive(Debug)]
-pub struct Code {
-    pub libraries: Vec<Library>,
-    pub functions: Vec<Function>
 }
 
 impl Code {

@@ -1,4 +1,5 @@
-use crate::py2cpp::{Type, Argument, Value, Instruction, Library, get_libraries};
+use crate::types::{Type, Argument, Value, Instruction, Library};
+use crate::py2cpp::get_libraries;
 use crate::constants::RE_INPUT;
 use crate::instructions::print;
 

@@ -3,10 +3,11 @@ extern crate lazy_static;
 
 use std::fs::File;          // file libraries
 use std::io::prelude::*;
-mod constants;
+mod types;
 mod py2cpp;
-mod infer;
+mod constants;
 mod instructions;
+mod infer;
 
 fn main() {
     let mut file = File::open("./src/ProyectoFinal.txt").unwrap();

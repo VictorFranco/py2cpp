@@ -1,4 +1,4 @@
-use crate::py2cpp::{Type, Instruction, Library};
+use crate::types::{Type, Instruction, Library};
 use crate::constants::{RE_RETURN, RE_INT, RE_STR, RE_VEC, RE_VAR};
 use crate::infer::get_var_type;
 
