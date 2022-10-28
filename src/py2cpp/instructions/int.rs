@@ -1,6 +1,6 @@
-use crate::types::{Type, Argument, Value, Instruction, Library};
-use crate::py2cpp::get_libraries;
-use crate::constants::{RE_INT_FUN, RE_STR, RE_VAR};
+use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library};
+use crate::py2cpp::py2cpp::get_libraries;
+use crate::py2cpp::constants::{RE_INT_FUN, RE_STR, RE_VAR};
 
 pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_int = RE_INT_FUN.captures(content);

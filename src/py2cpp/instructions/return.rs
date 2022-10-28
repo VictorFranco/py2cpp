@@ -1,6 +1,6 @@
-use crate::types::{Type, Instruction, Library};
-use crate::constants::{RE_RETURN, RE_INT, RE_STR, RE_VEC, RE_VAR};
-use crate::infer::get_var_type;
+use crate::py2cpp::types::{Type, Instruction, Library};
+use crate::py2cpp::constants::{RE_RETURN, RE_INT, RE_STR, RE_VEC, RE_VAR};
+use crate::py2cpp::infer::get_var_type;
 
 pub fn py2code(body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_return = RE_RETURN.captures(content);

@@ -1,8 +1,8 @@
 use std::collections::HashMap;
-use crate::types::{Type, Value, Instruction, Library, Code};
-use crate::py2cpp::{instruc2value, insts2cpp};
-use crate::constants::{RE_LOOP, RE_FUN, RE_INT, RE_VAR};
-use crate::instructions::{custom_fun, len};
+use crate::py2cpp::types::{Type, Value, Instruction, Library, Code};
+use crate::py2cpp::py2cpp::{instruc2value, insts2cpp};
+use crate::py2cpp::constants::{RE_LOOP, RE_FUN, RE_INT, RE_VAR};
+use crate::py2cpp::instructions::{custom_fun, len};
 
 pub fn py2code(code: &mut Code, body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_return = RE_LOOP.captures(content);
