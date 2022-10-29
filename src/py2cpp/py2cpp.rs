@@ -3,22 +3,6 @@ use crate::py2cpp::constants::{RE_HEAD_DEC_FUN, RE_DEC_FUN, RE_PARAMS, RE_INSTRU
 use crate::py2cpp::instructions::{print, input, custom_fun, declare, r#loop, r#return};
 use crate::py2cpp::infer;
 
-pub fn type2cpp(type_: &Type) -> String {
-    match type_ {
-        Type::Vector(type_) => {
-            format!("vector<{}>", type2cpp(type_))
-        },
-        _ => match type_ {
-            Type::Int => "int",
-            Type::String => "string",
-            Type::Void => "void",
-            Type::Undefined => "undefined",
-            Type::Generic => "T",
-            _ => ""
-        }.to_string()
-    }
-}
-
 pub fn instruc2value(instruction: &Instruction) -> Value {
     match instruction {
         Instruction::CallFun { name, arguments } => {
@@ -194,7 +178,7 @@ impl Code {
 
     fn fun2cpp(function: &Function) -> String {
         // generate function header
-        let type_ = type2cpp(&function.type_);
+        let type_ = Type::type2cpp(&function.type_);
         let mut there_are_generics = false;
         let mut header = format!("{} {}(", type_, function.name);
         for (index, param) in function.params.iter().enumerate() {
@@ -204,7 +188,7 @@ impl Code {
             if param.type_ == Type::Generic {
                 there_are_generics = true;
             }
-            let type_ = type2cpp(&param.type_);
+            let type_ = Type::type2cpp(&param.type_);
             header = format!("{}{} {}", header, type_, param.name);
         }
         if there_are_generics {

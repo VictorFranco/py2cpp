@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::py2cpp::types::{Type, Value, Instruction, Library};
-use crate::py2cpp::py2cpp::{type2cpp, instruc2value, get_libraries};
+use crate::py2cpp::py2cpp::{instruc2value, get_libraries};
 use crate::py2cpp::constants::{RE_DEC, RE_INT, RE_STR, RE_VEC, RE_FUN};
 use crate::py2cpp::instructions::{input, custom_fun, int, len};
 use crate::py2cpp::infer::get_fun_type;
@@ -60,7 +60,7 @@ pub fn code2cpp(type_: &Type, name: &String, value: &Value) -> String {
     let var_name = name;
     match value {
         Value::ConstValue(value) | Value::UseVar(value) => {
-            format!("{} {} = {};", type2cpp(type_), name, value)
+            format!("{} {} = {};", Type::type2cpp(type_), name, value)
         },
         Value::CallFun { name, arguments } => {
             let value = match name.as_str() {
@@ -68,10 +68,10 @@ pub fn code2cpp(type_: &Type, name: &String, value: &Value) -> String {
                 "len" => len::code2cpp(&arguments[0]),
                 _ => custom_fun::code2cpp(name, arguments, false)
             };
-            format!("{} {} = {};", type2cpp(type_), var_name, value)
+            format!("{} {} = {};", Type::type2cpp(type_), var_name, value)
         },
         Value::None => {
-            format!("{} {};", type2cpp(type_), name)
+            format!("{} {};", Type::type2cpp(type_), name)
         }
     }
 }
