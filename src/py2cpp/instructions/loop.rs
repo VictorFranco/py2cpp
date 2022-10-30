@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use crate::py2cpp::types::{Type, Value, Instruction, Library, Code};
-use crate::py2cpp::py2cpp::{instruc2value, insts2cpp};
 use crate::py2cpp::constants::{RE_LOOP, RE_FUN, RE_INT, RE_VAR};
 use crate::py2cpp::instructions::{custom_fun, len};
 
@@ -27,7 +26,7 @@ pub fn py2code(code: &mut Code, body: &mut Vec<Instruction>, fun_types: &HashMap
                             "len" => len::py2code(fun).unwrap(),
                             _ => custom_fun::py2code(body, fun_types, text).unwrap()
                         };
-                        instruc2value(&instructions[0])
+                        Instruction::instruc2value(&instructions[0])
                     }
                     _ => Value::None
                 };
@@ -60,7 +59,7 @@ pub fn code2cpp(counter: &String, start: &Value, end: &Value, content: &Vec<Inst
     }
     let [start, end] = values;
     let header = format!("for (int {} = {}; {} < {}; {}++)", counter, start, counter, end, counter);
-    let mut body = insts2cpp(content, tabs);
+    let mut body = Instruction::insts2cpp(content, tabs);
     for _ in 1..tabs {
         body.push_str( "    ");
     }

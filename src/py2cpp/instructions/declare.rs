@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::py2cpp::types::{Type, Value, Instruction, Library};
-use crate::py2cpp::py2cpp::{instruc2value, get_libraries};
+use crate::py2cpp::py2cpp::get_libraries;
 use crate::py2cpp::constants::{RE_DEC, RE_INT, RE_STR, RE_VEC, RE_FUN};
 use crate::py2cpp::instructions::{input, custom_fun, int, len};
 use crate::py2cpp::infer::get_fun_type;
@@ -32,15 +32,15 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
                         },
                         "int" => {
                             let (int_instructions, int_libraries) = int::py2code(text).unwrap();
-                            (Type::Int, instruc2value(&int_instructions[0]), int_libraries)
+                            (Type::Int, Instruction::instruc2value(&int_instructions[0]), int_libraries)
                         },
                         "len" => {
                             let (len_instructions, len_libraries) = len::py2code(text).unwrap();
-                            (Type::Int, instruc2value(&len_instructions[0]), len_libraries)
+                            (Type::Int, Instruction::instruc2value(&len_instructions[0]), len_libraries)
                         },
                         _ => {
                             let (custom_instructions, custom_libraries) = custom_fun::py2code(body, fun_types, text).unwrap();
-                            (get_fun_type(fun_types, fun_name), instruc2value(&custom_instructions[0]), custom_libraries)
+                            (get_fun_type(fun_types, fun_name), Instruction::instruc2value(&custom_instructions[0]), custom_libraries)
                         }
                     };
                     libraries.append(&mut fun_libraries);

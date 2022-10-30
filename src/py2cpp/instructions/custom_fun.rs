@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library};
-use crate::py2cpp::py2cpp::instruc2value;
 use crate::py2cpp::constants::{NATIVE_FUNS, RE_FUN, RE_ARGS, RE_INT, RE_STR, RE_VAR};
 use crate::py2cpp::instructions::{int, len};
 use crate::py2cpp::infer::{get_var_type, get_fun_type};
@@ -36,7 +35,7 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
                             _ => (get_fun_type(fun_types, fun_name), py2code(body, fun_types, text).unwrap())
                         };
                         libraries.append(&mut fun_libraries);
-                        (arg_type, instruc2value(&instructions[0]))
+                        (arg_type, Instruction::instruc2value(&instructions[0]))
                     },
                     _ => (Type::Undefined, Value::None)
                 };
