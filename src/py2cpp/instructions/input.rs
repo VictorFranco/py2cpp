@@ -1,5 +1,4 @@
 use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library};
-use crate::py2cpp::py2cpp::get_libraries;
 use crate::py2cpp::constants::RE_INPUT;
 use crate::py2cpp::instructions::print;
 
@@ -19,7 +18,7 @@ pub fn py2code(var_name: &str, content: &str, newline: bool) -> Option<(Vec<Inst
             instructions.push(
                 Instruction::CallFun { name, arguments: vec![argument] }
             );
-            let mut string = get_libraries(&["string"]);
+            let mut string = Library::get_libraries(&["string"]);
             libraries.append(&mut string);
 
             Some((instructions, libraries))

@@ -1,5 +1,4 @@
 use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library};
-use crate::py2cpp::py2cpp::get_libraries;
 use crate::py2cpp::constants::{RE_PRINT, RE_MSGS, RE_INT, RE_STR, RE_VAR};
 
 pub fn py2code(content: &str, newline: bool) -> Option<(Vec<Instruction>, Vec<Library>)> {
@@ -34,7 +33,7 @@ pub fn py2code(content: &str, newline: bool) -> Option<(Vec<Instruction>, Vec<Li
             );
 
             let instruction = Instruction::CallFun { name, arguments };
-            let libraries = get_libraries(&["iostream"]);
+            let libraries = Library::get_libraries(&["iostream"]);
             Some((vec![instruction], libraries))
         },
         None => None

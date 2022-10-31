@@ -1,18 +1,7 @@
-use crate::py2cpp::types::{Type, Param, Instruction, Function, Library, Code};
+use crate::py2cpp::types::{Type, Param, Instruction, Function, Code};
 use crate::py2cpp::constants::{RE_HEAD_DEC_FUN, RE_DEC_FUN, RE_PARAMS, RE_INSTRUCTIONS, RE_SHIFT_LEFT, RE_MAIN};
 use crate::py2cpp::instructions::{print, custom_fun, declare, r#loop, r#return};
 use crate::py2cpp::infer;
-
-pub fn get_libraries(names: &[&str]) -> Vec<Library> {
-    let mut libraries = Vec::new();
-    for name in names.iter() {
-        let name = name.to_string();
-        libraries.push(
-            Library { name }
-        );
-    }
-    libraries
-}
 
 impl Code {
 

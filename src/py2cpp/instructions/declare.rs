@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use crate::py2cpp::types::{Type, Value, Instruction, Library};
-use crate::py2cpp::py2cpp::get_libraries;
 use crate::py2cpp::constants::{RE_DEC, RE_INT, RE_STR, RE_VEC, RE_FUN};
 use crate::py2cpp::instructions::{input, custom_fun, int, len};
 use crate::py2cpp::infer::get_fun_type;
@@ -18,7 +17,7 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
                 text if RE_INT.is_match(text) => (Type::Int, Value::ConstValue(content)),
                 text if RE_STR.is_match(text) => (Type::String, Value::ConstValue(content)),
                 text if RE_VEC.is_match(text) => {
-                    libraries = get_libraries(&["vector"]);
+                    libraries = Library::get_libraries(&["vector"]);
                     (Type::Vector(Box::new(Type::Undefined)), Value::None)
                 },
                 text if RE_FUN.is_match(text) => {
