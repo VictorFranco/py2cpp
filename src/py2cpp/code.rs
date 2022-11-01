@@ -166,11 +166,11 @@ impl Code {
         result
     }
 
-}
+    pub fn transpile(py_code: &str) -> String {
+        let code: Code = Code::py2code(py_code);
+        println!("{:?}", code);
 
-pub fn transpile(py_code: &str) -> String {
-    let code: Code = Code::py2code(py_code);
-    println!("{:?}", code);
+        Code::code2cpp(code)
+    }
 
-    Code::code2cpp(code)
 }
