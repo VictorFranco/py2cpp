@@ -21,6 +21,15 @@ pub struct Argument {
 }
 
 #[derive(Debug, Clone)]
+pub enum Operator {
+    Plus,
+    Minus,
+    Multiply,
+    Divide,
+    None
+}
+
+#[derive(Debug, Clone)]
 pub enum Value {
     ConstValue(String),
     UseVar(String),
@@ -32,7 +41,7 @@ pub enum Value {
 pub enum Instruction {
     CreateVar { type_: Type, name: String, value: Value },
     CallFun { name: String, arguments: Vec<Argument> },
-    Loop { counter:String, start: Value, end: Value, content: Vec<Instruction> },
+    Loop { counter: String, start: Value, end: Value, content: Vec<Instruction> },
     Return { type_: Type, value: String }
 }
 
