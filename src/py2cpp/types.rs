@@ -34,6 +34,7 @@ pub enum Value {
     ConstValue(String),
     UseVar(String),
     CallFun { name: String, arguments: Vec<Argument> },
+    Expression { operators: Vec<Operator>, values: Vec<Value> },
     None
 }
 
