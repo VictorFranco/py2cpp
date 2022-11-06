@@ -30,7 +30,7 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
                         let fun = cap.get(0).unwrap().as_str();
                         let fun_name = cap.get(1).unwrap().as_str();
                         let (arg_type, (instructions, mut fun_libraries)) = match fun_name {
-                            "int" => (Type::Int, int::py2code(fun).unwrap()),
+                            "int" => (Type::Int, int::py2code(body, fun_types, text).unwrap()),
                             "len" => (Type::Int, len::py2code(fun).unwrap()),
                             _ => (get_fun_type(fun_types, fun_name), py2code(body, fun_types, text).unwrap())
                         };

@@ -13,6 +13,7 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
             let mut instructions = Vec::new();
             let name = data.get(1).unwrap().as_str().to_string();
             let content = data.get(2).unwrap().as_str().to_string();
+            let mut first_declare = false;
             let (type_, value) = match content.as_str() {
                 text if RE_EXP.is_match(text) => (Type::Int, Value::exp2value(text)),
                 text if RE_INT.is_match(text) => (Type::Int, Value::ConstValue(content)),
@@ -26,13 +27,17 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
                     let fun_name = cap_fun.get(1).unwrap().as_str();
                     let (fun_type, fun_value, mut fun_libraries) = match fun_name {
                         "input" => {
+                            first_declare = true;
                             let (mut input_instructions, input_libraries) = input::py2code(&name, text, false).unwrap();
                             instructions.append(&mut input_instructions);
                             (Type::String, Value::None, input_libraries)
                         },
                         "int" => {
-                            let (int_instructions, int_libraries) = int::py2code(text).unwrap();
-                            (Type::Int, Instruction::instruc2value(&int_instructions[0]), int_libraries)
+                            let (mut int_instructions, int_libraries) = int::py2code(body, fun_types, text).unwrap();
+                            instructions.append(&mut int_instructions);
+                            let call_instr = instructions.pop().unwrap();
+                            let value = Instruction::instruc2value(&call_instr);
+                            (Type::Int, value, int_libraries)
                         },
                         "len" => {
                             let (len_instructions, len_libraries) = len::py2code(text).unwrap();
@@ -48,8 +53,11 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
                 },
                 _ => (Type::Undefined, Value::ConstValue(content))
             };
-            let instruction = Instruction::CreateVar { type_, name, value };
-            instructions.insert(0, instruction);
+            let declare = Instruction::CreateVar { type_, name, value };
+            match first_declare {
+                true  => instructions.insert(0, declare),
+                false => instructions.push(declare)
+            }
             Some((instructions, libraries))
         },
         None => None
