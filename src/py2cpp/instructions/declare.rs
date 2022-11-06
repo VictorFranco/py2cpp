@@ -14,7 +14,7 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
             let name = data.get(1).unwrap().as_str().to_string();
             let content = data.get(2).unwrap().as_str().to_string();
             let (type_, value) = match content.as_str() {
-                text if RE_EXP.is_match(text) => (Type::Int, Value::ConstValue(content)),
+                text if RE_EXP.is_match(text) => (Type::Int, Value::exp2value(text)),
                 text if RE_INT.is_match(text) => (Type::Int, Value::ConstValue(content)),
                 text if RE_STR.is_match(text) => (Type::String, Value::ConstValue(content)),
                 text if RE_VEC.is_match(text) => {
@@ -69,6 +69,9 @@ pub fn code2cpp(type_: &Type, name: &String, value: &Value) -> String {
                 _ => custom_fun::code2cpp(name, arguments, false)
             };
             format!("{} {} = {};", Type::type2cpp(type_), var_name, value)
+        },
+        Value::Expression { operators, values } => {
+            format!("{} {} = {};", Type::type2cpp(type_), name, Value::exp2cpp(operators, values))
         },
         Value::None => {
             format!("{} {};", Type::type2cpp(type_), name)

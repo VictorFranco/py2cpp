@@ -13,12 +13,14 @@ const VECTOR: &str = r"^\[\]$";
 const VARIABLE: &str = r"^[a-zA-Z][a-zA-Z0-9]*$";
 // instructions
 const PRINT: &str = r##"^print\((.*)\)[^"]*$"##;
-const MESSAGES: &str = r##"("[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]+),?"##;
+const MESSAGES: &str = r##"("[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]*),?"##;
 const INPUT: &str = r##"^input\((.*)\)$"##;
 const FUNCTION: &str = r##"^([a-zA-Z][a-zA-Z0-9]*)\((.*)\)[^"]*$"##;
 const ARGUMENTS: &str = r##"([+-]?\s*\d+|"[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]*(\(.*\))?),?"##;
 const DECLARE: &str = r##"(?m)^([a-zA-Z][a-zA-Z0-9]*)\s*=\s*(.*)$"##;
-const EXPRESSION: &str = r##"^((\d+|[a-zA-Z][a-zA-Z0-9]+(\[.*\])?)\s*[+\-/*])+\s*(\d+|[a-zA-Z][a-zA-Z0-9]+(\[.*\])?)$"##;
+const EXPRESSION: &str = r##"^((\d+|[a-zA-Z][a-zA-Z0-9]*(\[.*\])?)\s*[+\-/*])+\s*(\d+|[a-zA-Z][a-zA-Z0-9]*(\[.*\])?)$"##;
+const VALUE: &str = r##"\s*(\d+|[a-zA-Z][a-zA-Z0-9]*(\[.*\])?)\s*"##;
+const OPERATOR: &str = r##"[+\-/*]"##;
 const INT_FUN: &str = r##"^int\((.*)\)$"##;
 const LOOP: &str = r"(?m)for ([a-zA-Z][a-zA-Z0-9]*) in range\(\s*(.*)\s*,\s*(.*)\s*\):\n((.*\n?)*)";
 const LEN: &str = r"^len\((.*)\)$";
@@ -46,6 +48,8 @@ lazy_static! {
     pub static ref RE_ARGS: Regex = Regex::new(ARGUMENTS).unwrap();
     pub static ref RE_DEC: Regex = Regex::new(DECLARE).unwrap();
     pub static ref RE_EXP: Regex = Regex::new(EXPRESSION).unwrap();
+    pub static ref RE_VAL: Regex = Regex::new(VALUE).unwrap();
+    pub static ref RE_OPR: Regex = Regex::new(OPERATOR).unwrap();
     pub static ref RE_INT_FUN: Regex = Regex::new(INT_FUN).unwrap();
     pub static ref RE_LOOP: Regex = Regex::new(LOOP).unwrap();
     pub static ref RE_LEN: Regex = Regex::new(LEN).unwrap();

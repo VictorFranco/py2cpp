@@ -3,6 +3,7 @@ pub mod r#type;
 pub mod library;
 pub mod instruction;
 pub mod operator;
+pub mod value;
 pub mod code;
 pub mod constants;
 pub mod instructions;
