@@ -31,7 +31,7 @@ impl Code {
         (name, params)
     }
 
-    pub fn get_instructions(self: &mut Code, body: String) -> Vec<Instruction> {
+    pub fn get_instructions(self: &mut Code, fun_body: &mut Vec<Instruction>, body: String) -> Vec<Instruction> {
         let caps = RE_INSTRUCTIONS.captures_iter(&body);
         let mut body: Vec<Instruction> = Vec::new();
         let fun_types = infer::get_fun_types(self);
@@ -42,7 +42,7 @@ impl Code {
                 print::py2code(content, true),
                 declare::py2code(&mut body, &fun_types, content),
                 custom_fun::py2code(&mut body, &fun_types, content),
-                append::py2code(&mut body, content),
+                append::py2code(&mut body, fun_body, content),
                 r#loop::py2code(self, &mut body, &fun_types, content),
                 r#return::py2code(&mut body, content)
             ];
@@ -68,7 +68,7 @@ impl Code {
             body = format!("{}{}\n", body, content);
         }
 
-        let mut body: Vec<Instruction> = Self::get_instructions(self, body);
+        let mut body: Vec<Instruction> = Self::get_instructions(self, &mut vec![], body);
         let type_ = Type::Int;
         let value = "0".to_string();
 
@@ -105,7 +105,7 @@ impl Code {
             let body = Self::shift_code_left(body);
             let header = cap.get(0).unwrap().as_str();
 
-            let mut body: Vec<Instruction> = Self::get_instructions(&mut code, body);
+            let mut body: Vec<Instruction> = Self::get_instructions(&mut code, &mut vec![], body);
             let type_: Type = infer::get_return_type(&mut body);
             let (name, params): (String, Vec<Param>) = Self::get_header_info(header);
 

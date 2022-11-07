@@ -33,8 +33,8 @@ pub fn py2code(code: &mut Code, body: &mut Vec<Instruction>, fun_types: &HashMap
             }
             let [start, end] = values;
             let value = data.get(4).unwrap().as_str();
-            let body = Code::shift_code_left(value);
-            let content = Code::get_instructions(code, body);
+            let loop_body = Code::shift_code_left(value);
+            let content = Code::get_instructions(code, body, loop_body);
             let instruction = Instruction::Loop { counter, start, end, content };
             Some((vec![instruction], vec![]))
         },
