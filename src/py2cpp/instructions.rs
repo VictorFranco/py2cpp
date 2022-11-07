@@ -5,5 +5,6 @@ pub mod declare;
 pub mod int;
 pub mod len;
 pub mod append;
+pub mod at;
 pub mod r#loop;
 pub mod r#return;

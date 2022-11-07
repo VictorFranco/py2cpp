@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use crate::py2cpp::types::{Type, Value, Instruction, Library};
-use crate::py2cpp::constants::{RE_DEC, RE_EXP, RE_INT, RE_STR, RE_VEC, RE_FUN};
-use crate::py2cpp::instructions::{input, custom_fun, int, len};
+use crate::py2cpp::constants::{RE_DEC, RE_EXP, RE_INT, RE_STR, RE_VEC, RE_FUN, RE_AT};
+use crate::py2cpp::instructions::{input, custom_fun, int, len, at};
 use crate::py2cpp::infer::get_fun_type;
 
 pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
@@ -21,6 +21,10 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
                 text if RE_VEC.is_match(text) => {
                     libraries = Library::get_libraries(&["vector"]);
                     (Type::Vector(Box::new(Type::Undefined)), Value::None)
+                },
+                text if RE_AT.is_match(text) => {
+                    let (at_instructions, _at_libraries) = at::py2code(body, text).unwrap();
+                    (Type::Int, Instruction::instruc2value(&at_instructions[0]))
                 },
                 text if RE_FUN.is_match(text) => {
                     let cap_fun = RE_FUN.captures(text).unwrap();
@@ -74,6 +78,7 @@ pub fn code2cpp(type_: &Type, name: &String, value: &Value) -> String {
             let value = match name.as_str() {
                 "int" => int::code2cpp(&arguments[0]),
                 "len" => len::code2cpp(&arguments[0]),
+                "at"  => at::code2cpp(name, arguments),
                 _ => custom_fun::code2cpp(name, arguments, false)
             };
             format!("{} {} = {};", Type::type2cpp(type_), var_name, value)
