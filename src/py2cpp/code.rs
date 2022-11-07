@@ -1,6 +1,6 @@
 use crate::py2cpp::types::{Type, Param, Instruction, Function, Code};
 use crate::py2cpp::constants::{RE_HEAD_DEC_FUN, RE_DEC_FUN, RE_PARAMS, RE_INSTRUCTIONS, RE_SHIFT_LEFT, RE_MAIN};
-use crate::py2cpp::instructions::{print, custom_fun, declare, r#loop, r#return};
+use crate::py2cpp::instructions::{print, custom_fun, declare, append, r#loop, r#return};
 use crate::py2cpp::infer;
 
 impl Code {
@@ -42,6 +42,7 @@ impl Code {
                 print::py2code(content, true),
                 declare::py2code(&mut body, &fun_types, content),
                 custom_fun::py2code(&mut body, &fun_types, content),
+                append::py2code(&mut body, content),
                 r#loop::py2code(self, &mut body, &fun_types, content),
                 r#return::py2code(&mut body, content)
             ];

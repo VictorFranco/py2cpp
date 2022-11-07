@@ -1,5 +1,5 @@
 use crate::py2cpp::types::{Instruction, Value};
-use crate::py2cpp::instructions::{print, input, custom_fun, declare, r#loop, r#return};
+use crate::py2cpp::instructions::{print, input, custom_fun, declare, append, r#loop, r#return};
 
 impl Instruction {
 
@@ -25,7 +25,8 @@ impl Instruction {
                     let options = [
                         print::code2cpp(name, arguments),
                         input::code2cpp(name, arguments),
-                        custom_fun::code2cpp(name, arguments, true)
+                        custom_fun::code2cpp(name, arguments, true),
+                        append::code2cpp(name, arguments)
                     ];
                     options.join("")
                 },

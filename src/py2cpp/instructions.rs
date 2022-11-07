@@ -4,5 +4,6 @@ pub mod custom_fun;
 pub mod declare;
 pub mod int;
 pub mod len;
+pub mod append;
 pub mod r#loop;
 pub mod r#return;

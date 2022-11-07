@@ -24,9 +24,10 @@ const OPERATOR: &str = r##"[+\-/*]"##;
 const INT_FUN: &str = r##"^int\((.*)\)$"##;
 const LOOP: &str = r"(?m)for ([a-zA-Z][a-zA-Z0-9]*) in range\(\s*(.*)\s*,\s*(.*)\s*\):\n((.*\n?)*)";
 const LEN: &str = r"^len\((.*)\)$";
+const APPEND: &str = r"^([a-zA-Z][a-zA-Z0-9]*)\.append\((.*)\)\s*$";
 const RETURN: &str = r"^return (.*)$";
 
-pub const NATIVE_FUNS: [&str; 4] = ["print", "input", "int", "len"];
+pub const NATIVE_FUNS: [&str; 5] = ["print", "input", "int", "len", "append"];
 
 lazy_static! {
     pub static ref RE_HEAD_DEC_FUN: Regex = Regex::new(HEAD_DEC_FUN).unwrap();
@@ -53,5 +54,6 @@ lazy_static! {
     pub static ref RE_INT_FUN: Regex = Regex::new(INT_FUN).unwrap();
     pub static ref RE_LOOP: Regex = Regex::new(LOOP).unwrap();
     pub static ref RE_LEN: Regex = Regex::new(LEN).unwrap();
+    pub static ref RE_APPEND: Regex = Regex::new(APPEND).unwrap();
     pub static ref RE_RETURN: Regex = Regex::new(RETURN).unwrap();
 }
