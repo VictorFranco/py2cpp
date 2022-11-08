@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library};
-use crate::py2cpp::constants::{RE_INT_FUN, RE_STR, RE_VAR, RE_FUN};
+use crate::py2cpp::constants::{RE_INT_FUN, RE_FUN, RE_STR, RE_VAR};
 use crate::py2cpp::instructions::{custom_fun, declare};
 
 pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {

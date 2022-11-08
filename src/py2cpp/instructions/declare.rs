@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use crate::py2cpp::types::{Type, Value, Instruction, Library};
-use crate::py2cpp::constants::{RE_DEC, RE_EXP, RE_INT, RE_STR, RE_VEC, RE_FUN, RE_AT};
+use crate::py2cpp::constants::{RE_FUN, RE_DEC, RE_EXP, RE_AT, RE_INT, RE_STR, RE_VEC, RE_VAR};
 use crate::py2cpp::instructions::{input, custom_fun, int, len, at};
-use crate::py2cpp::infer::get_fun_type;
+use crate::py2cpp::infer::{get_var_type, get_fun_type};
 
 pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_dec = RE_DEC.captures(content);
@@ -18,6 +18,7 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
                 text if RE_EXP.is_match(text) => (Type::Int, Value::exp2value(text)),
                 text if RE_INT.is_match(text) => (Type::Int, Value::ConstValue(content)),
                 text if RE_STR.is_match(text) => (Type::String, Value::ConstValue(content)),
+                text if RE_VAR.is_match(text) => (get_var_type(text, body), Value::UseVar(content)),
                 text if RE_VEC.is_match(text) => {
                     libraries = Library::get_libraries(&["vector"]);
                     (Type::Vector(Box::new(Type::Undefined)), Value::None)
