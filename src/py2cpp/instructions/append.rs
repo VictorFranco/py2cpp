@@ -1,14 +1,22 @@
 use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library};
-use crate::py2cpp::constants::RE_APPEND;
+use crate::py2cpp::constants::{RE_APPEND, RE_INT, RE_STR, RE_VAR};
+use crate::py2cpp::infer::get_var_type;
 
-pub fn py2code(_body: &mut Vec<Instruction>, context: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(body: &mut Vec<Instruction>, context: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_append = RE_APPEND.captures(content);
 
     match cap_append {
         Some(data) => {
             let vector = data.get(1).unwrap().as_str();
-            let element = data.get(2).unwrap().as_str().to_string();
+            let element = data.get(2).unwrap().as_str();
             let mut arguments = Vec::new();
+
+            let vec_type = match element {
+                text if RE_INT.is_match(text) => Type::Int,
+                text if RE_STR.is_match(text) => Type::String,
+                text if RE_VAR.is_match(text) => get_var_type(text, body),
+                _ => Type::Undefined
+            };
 
             arguments.push(
                 Argument {
@@ -20,7 +28,7 @@ pub fn py2code(_body: &mut Vec<Instruction>, context: &mut Vec<Instruction>, con
             arguments.push(
                 Argument {
                     type_: Type::Undefined,
-                    value: Value::UseVar(element)
+                    value: Value::UseVar(element.to_string())
                 }
             );
 
@@ -29,7 +37,7 @@ pub fn py2code(_body: &mut Vec<Instruction>, context: &mut Vec<Instruction>, con
                     Instruction::CreateVar { type_, name, value: _ } => {
                         if name.as_str() == vector {
                             match type_ {
-                                Type::Vector(data) => *data = Box::new(Type::Int),
+                                Type::Vector(data) => *data = Box::new(vec_type.clone()),
                                 _ => {}
                             }
                         };
