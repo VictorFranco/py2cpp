@@ -4,7 +4,7 @@ use crate::py2cpp::constants::{RE_FUN, RE_DEC, RE_EXP, RE_AT, RE_INT, RE_STR, RE
 use crate::py2cpp::instructions::{input, custom_fun, int, len, at};
 use crate::py2cpp::infer::{get_var_type, get_fun_type};
 
-pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(body: &mut Vec<Instruction>, context: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_dec = RE_DEC.captures(content);
 
     match cap_dec {
@@ -58,7 +58,36 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
                 },
                 _ => (Type::Undefined, Value::ConstValue(content))
             };
-            let declare = Instruction::CreateVar { type_, name, value };
+            let var_type = type_.clone();
+            let var_name = name.to_string();
+            let var_value = value.clone();
+            let mut declare = Instruction::CreateVar { type_, name, value };
+            for instruction in body.iter() {
+                match instruction {
+                    Instruction::CreateVar { type_, name, value: _ } => {
+                        if &var_name == name && &var_type == type_ {
+                            let type_ = type_.clone();
+                            let name = name.to_string();
+                            let value = var_value.clone();
+                            declare = Instruction::ReassignVar { type_, name, value };
+                        }
+                    },
+                    _ => {}
+                }
+            }
+            for instruction in context.iter() {
+                match instruction {
+                    Instruction::CreateVar { type_, name, value: _ } => {
+                        if &var_name == name && &var_type == type_ {
+                            let type_ = type_.clone();
+                            let name = name.to_string();
+                            let value = var_value.clone();
+                            declare = Instruction::ReassignVar { type_, name, value };
+                        }
+                    },
+                    _ => {}
+                }
+            }
             match first_declare {
                 true  => instructions.insert(0, declare),
                 false => instructions.push(declare)
@@ -69,11 +98,14 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
     }
 }
 
-pub fn code2cpp(type_: &Type, name: &String, value: &Value) -> String {
-    let var_name = name;
+pub fn code2cpp(type_: &Type, name: &String, value: &Value, declare: bool) -> String {
+    let result = match declare {
+        true => format!("{} {}", Type::type2cpp(type_), name),
+        false => format!("{}", name)
+    };
     match value {
         Value::ConstValue(value) | Value::UseVar(value) => {
-            format!("{} {} = {};", Type::type2cpp(type_), name, value)
+            format!("{} = {};", result, value)
         },
         Value::CallFun { name, arguments } => {
             let value = match name.as_str() {
@@ -82,13 +114,13 @@ pub fn code2cpp(type_: &Type, name: &String, value: &Value) -> String {
                 "at"  => at::code2cpp(name, arguments),
                 _ => custom_fun::code2cpp(name, arguments, false)
             };
-            format!("{} {} = {};", Type::type2cpp(type_), var_name, value)
+            format!("{} = {};", result, value)
         },
         Value::Expression { operators, values } => {
-            format!("{} {} = {};", Type::type2cpp(type_), name, Value::exp2cpp(operators, values))
+            format!("{} = {};", result, Value::exp2cpp(operators, values))
         },
         Value::None => {
-            format!("{} {};", Type::type2cpp(type_), name)
+            format!("{};", result)
         }
     }
 }

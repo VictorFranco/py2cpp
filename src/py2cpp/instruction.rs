@@ -21,6 +21,12 @@ impl Instruction {
                 result.push_str( "    ");
             }
             let cpp_instruction = match instruction {
+                Instruction::CreateVar { type_, name, value } => {
+                    declare::code2cpp(type_, name, value, true)
+                },
+                Instruction::ReassignVar { type_, name, value } => {
+                    declare::code2cpp(type_, name, value, false)
+                },
                 Instruction::CallFun { name, arguments } => {
                     let options = [
                         print::code2cpp(name, arguments),
@@ -29,9 +35,6 @@ impl Instruction {
                         append::code2cpp(name, arguments)
                     ];
                     options.join("")
-                },
-                Instruction::CreateVar { type_, name, value } => {
-                    declare::code2cpp(type_, name, value)
                 },
                 Instruction::Loop { counter, start, end, content } => {
                     r#loop::code2cpp(counter, start, end, content, tabs + 1)

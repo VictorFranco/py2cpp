@@ -41,6 +41,7 @@ pub enum Value {
 #[derive(Debug)]
 pub enum Instruction {
     CreateVar { type_: Type, name: String, value: Value },
+    ReassignVar { type_: Type, name: String, value: Value },
     CallFun { name: String, arguments: Vec<Argument> },
     Loop { counter: String, start: Value, end: Value, content: Vec<Instruction> },
     Return { type_: Type, value: String }

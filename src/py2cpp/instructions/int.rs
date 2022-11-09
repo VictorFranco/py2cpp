@@ -23,7 +23,7 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
                     let (mut fun_instructions, mut fun_libraries) = match fun_name {
                         "input" => {
                             let new_var = format!("{} = {}", var_name, text);
-                            declare::py2code(body, &fun_types, &new_var).unwrap()
+                            declare::py2code(body, &mut vec![], &fun_types, &new_var).unwrap()
                         },
                         _ => custom_fun::py2code(body, fun_types, text).unwrap()
                     };

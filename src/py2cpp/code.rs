@@ -40,7 +40,7 @@ impl Code {
             let content = cap.get(1).unwrap().as_str();
             let results = [
                 print::py2code(content, true),
-                declare::py2code(&mut body, &fun_types, content),
+                declare::py2code(&mut body, fun_body, &fun_types, content),
                 custom_fun::py2code(&mut body, &fun_types, content),
                 append::py2code(&mut body, fun_body, content),
                 r#loop::py2code(self, &mut body, &fun_types, content),
