@@ -68,7 +68,7 @@ impl Code {
             body = format!("{}{}\n", body, content);
         }
 
-        let mut body: Vec<Instruction> = Self::get_instructions(self, &mut vec![], body);
+        let mut body: Vec<Instruction> = self.get_instructions(&mut vec![], body);
         let type_ = Type::Int;
         let value = "0".to_string();
 
@@ -105,7 +105,7 @@ impl Code {
             let body = Self::shift_code_left(body);
             let header = cap.get(0).unwrap().as_str();
 
-            let mut body: Vec<Instruction> = Self::get_instructions(&mut code, &mut vec![], body);
+            let mut body: Vec<Instruction> = code.get_instructions(&mut vec![], body);
             let type_: Type = infer::get_return_type(&mut body);
             let (name, params): (String, Vec<Param>) = Self::get_header_info(header);
 
@@ -171,7 +171,7 @@ impl Code {
         let code: Code = Code::py2code(py_code);
         println!("{:?}", code);
 
-        Code::code2cpp(code)
+        code.code2cpp()
     }
 
 }
