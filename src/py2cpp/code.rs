@@ -31,7 +31,7 @@ impl Code {
         (name, params)
     }
 
-    pub fn get_instructions(self: &mut Code, fun_body: &mut Vec<Instruction>, body: String) -> Vec<Instruction> {
+    pub fn get_instructions(&mut self, fun_body: &mut Vec<Instruction>, body: String) -> Vec<Instruction> {
         let caps = RE_INSTRUCTIONS.captures_iter(&body);
         let mut body: Vec<Instruction> = Vec::new();
         let fun_types = infer::get_fun_types(self);
@@ -59,7 +59,7 @@ impl Code {
         body
     }
 
-    fn get_main(self: &mut Code, py_code: &str) -> Function {
+    fn get_main(&mut self, py_code: &str) -> Function {
         let caps = RE_MAIN.captures_iter(py_code);
         let mut body = String::new();
 
@@ -114,7 +114,7 @@ impl Code {
             );
         }
 
-        let main: Function = Self::get_main(&mut code, py_code);
+        let main: Function = code.get_main(py_code);
         code.functions.push(main);
 
         infer::param_types(&mut code);
@@ -127,7 +127,7 @@ impl Code {
 
     fn fun2cpp(function: &Function) -> String {
         // generate function header
-        let type_ = Type::type2cpp(&function.type_);
+        let type_ = function.type_.type2cpp();
         let mut there_are_generics = false;
         let mut header = format!("{} {}(", type_, function.name);
         for (index, param) in function.params.iter().enumerate() {
@@ -137,7 +137,7 @@ impl Code {
             if param.type_ == Type::Generic {
                 there_are_generics = true;
             }
-            let type_ = Type::type2cpp(&param.type_);
+            let type_ = param.type_.type2cpp();
             header = format!("{}{} {}", header, type_, param.name);
         }
         if there_are_generics {
@@ -148,7 +148,7 @@ impl Code {
         format!("{}) {{\n{}}}\n", header, body)
     }
 
-    fn code2cpp(self: Code) -> String {
+    fn code2cpp(self) -> String {
         // generate libraries
         let mut result = String::new();
         for library in self.libraries.iter() {

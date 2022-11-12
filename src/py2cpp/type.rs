@@ -2,12 +2,12 @@ use crate::py2cpp::types::Type;
 
 impl Type {
 
-    pub fn type2cpp(type_: &Type) -> String {
-        match type_ {
+    pub fn type2cpp(&self) -> String {
+        match self {
             Type::Vector(type_) => {
-                format!("vector<{}>", Type::type2cpp(type_))
+                format!("vector<{}>", type_.type2cpp())
             },
-            _ => match type_ {
+            _ => match self {
                 Type::Int => "int",
                 Type::String => "string",
                 Type::Void => "void",

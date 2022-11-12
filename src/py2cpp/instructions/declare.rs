@@ -100,7 +100,7 @@ pub fn py2code(body: &mut Vec<Instruction>, context: &mut Vec<Instruction>, fun_
 
 pub fn code2cpp(type_: &Type, name: &String, value: &Value, declare: bool) -> String {
     let result = match declare {
-        true => format!("{} {}", Type::type2cpp(type_), name),
+        true => format!("{} {}", type_.type2cpp(), name),
         false => format!("{}", name)
     };
     match value {
