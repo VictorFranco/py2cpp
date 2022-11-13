@@ -1,4 +1,4 @@
-use crate::py2cpp::types::{Operator, Value, Instruction};
+use crate::py2cpp::types::{Operator, Value};
 use crate::py2cpp::constants::{RE_VAL, RE_OPR, RE_AT, RE_INT, RE_VAR};
 use crate::py2cpp::instructions::{custom_fun, int, len, at};
 
@@ -21,7 +21,7 @@ impl Value {
                 text if RE_VAR.is_match(text) => Value::UseVar(content),
                 text if RE_AT.is_match(text) => {
                     let (at_instructions, _at_libraries) = at::py2code(&mut vec![], text).unwrap();
-                    Instruction::instruc2value(&at_instructions[0])
+                    at_instructions[0].inst2value()
                 },
                 _ => Value::None
             };

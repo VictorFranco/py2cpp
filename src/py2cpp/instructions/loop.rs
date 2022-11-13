@@ -26,7 +26,7 @@ pub fn py2code(code: &mut Code, body: &mut Vec<Instruction>, fun_types: &HashMap
                             "len" => len::py2code(fun).unwrap(),
                             _ => custom_fun::py2code(body, fun_types, text).unwrap()
                         };
-                        Instruction::instruc2value(&instructions[0])
+                        instructions[0].inst2value()
                     }
                     _ => Value::None
                 };

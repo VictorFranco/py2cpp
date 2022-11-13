@@ -3,8 +3,8 @@ use crate::py2cpp::instructions::{print, input, custom_fun, declare, append, r#l
 
 impl Instruction {
 
-    pub fn instruc2value(instruction: &Instruction) -> Value {
-        match instruction {
+    pub fn inst2value(&self) -> Value {
+        match self {
             Instruction::CallFun { name, arguments } => {
                 let name = name.to_string();
                 let arguments = arguments.to_vec();

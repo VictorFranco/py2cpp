@@ -25,7 +25,7 @@ pub fn py2code(body: &mut Vec<Instruction>, context: &mut Vec<Instruction>, fun_
                 },
                 text if RE_AT.is_match(text) => {
                     let (at_instructions, _at_libraries) = at::py2code(body, text).unwrap();
-                    (Type::Int, Instruction::instruc2value(&at_instructions[0]))
+                    (Type::Int, at_instructions[0].inst2value())
                 },
                 text if RE_FUN.is_match(text) => {
                     let cap_fun = RE_FUN.captures(text).unwrap();
@@ -41,16 +41,16 @@ pub fn py2code(body: &mut Vec<Instruction>, context: &mut Vec<Instruction>, fun_
                             let (mut int_instructions, int_libraries) = int::py2code(body, fun_types, text).unwrap();
                             instructions.append(&mut int_instructions);
                             let call_instr = instructions.pop().unwrap();
-                            let value = Instruction::instruc2value(&call_instr);
+                            let value = call_instr.inst2value();
                             (Type::Int, value, int_libraries)
                         },
                         "len" => {
                             let (len_instructions, len_libraries) = len::py2code(text).unwrap();
-                            (Type::Int, Instruction::instruc2value(&len_instructions[0]), len_libraries)
+                            (Type::Int, len_instructions[0].inst2value(), len_libraries)
                         },
                         _ => {
                             let (custom_instructions, custom_libraries) = custom_fun::py2code(body, fun_types, text).unwrap();
-                            (get_fun_type(fun_types, fun_name), Instruction::instruc2value(&custom_instructions[0]), custom_libraries)
+                            (get_fun_type(fun_types, fun_name), custom_instructions[0].inst2value(), custom_libraries)
                         }
                     };
                     libraries.append(&mut fun_libraries);

@@ -35,7 +35,7 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
                             _ => (get_fun_type(fun_types, fun_name), py2code(body, fun_types, text).unwrap())
                         };
                         libraries.append(&mut fun_libraries);
-                        (arg_type, Instruction::instruc2value(&instructions[0]))
+                        (arg_type, instructions[0].inst2value())
                     },
                     _ => (Type::Undefined, Value::None)
                 };
