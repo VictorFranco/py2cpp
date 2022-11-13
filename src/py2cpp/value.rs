@@ -50,7 +50,7 @@ impl Value {
             };
             result = match index == 0 {
                 true  => format!("{}{}", result, value),
-                false => format!("{} {} {}", result, Operator::opr2cpp(&operators[index-1]), value)
+                false => format!("{} {} {}", result, operators[index-1].opr2cpp(), value)
             };
         }
         result

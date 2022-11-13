@@ -12,8 +12,8 @@ impl Operator {
         }
     }
 
-    pub fn opr2cpp(operator: &Operator) -> String {
-        match operator {
+    pub fn opr2cpp(&self) -> String {
+        match self {
             Operator::Plus => "+",
             Operator::Minus => "-",
             Operator::Multiply => "*",
