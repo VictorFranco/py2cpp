@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     Int,
@@ -65,3 +67,7 @@ pub struct Code {
     pub libraries: Vec<Library>,
     pub functions: Vec<Function>
 }
+
+pub struct Context (
+    pub HashMap<String, Vec<Param>>
+);

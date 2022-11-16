@@ -1,10 +1,10 @@
-use std::collections::HashMap;
-use crate::py2cpp::types::{Type, Param, Value, Instruction, Library};
+use rand::Rng;
+use crate::py2cpp::types::{Type, Param, Value, Instruction, Library, Context};
 use crate::py2cpp::constants::{RE_FUN, RE_DEC, RE_EXP, RE_AT, RE_INT, RE_STR, RE_VEC, RE_VAR};
 use crate::py2cpp::instructions::{input, custom_fun, int, len, at};
 use crate::py2cpp::infer::get_type;
 
-pub fn py2code(context: &mut HashMap<String, Param>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(context: &mut Context, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_dec = RE_DEC.captures(content);
 
     match cap_dec {
@@ -18,7 +18,9 @@ pub fn py2code(context: &mut HashMap<String, Param>, content: &str) -> Option<(V
                 text if RE_EXP.is_match(text) => (Type::Int, Value::exp2value(text)),
                 text if RE_INT.is_match(text) => (Type::Int, Value::ConstValue(content)),
                 text if RE_STR.is_match(text) => (Type::String, Value::ConstValue(content)),
-                text if RE_VAR.is_match(text) => (get_type(text, context), Value::UseVar(content)),
+                text if RE_VAR.is_match(text) => {
+                    (get_type(text, context), Value::UseVar(content))
+                },
                 text if RE_VEC.is_match(text) => {
                     libraries = Library::get_libraries(&["vector"]);
                     (Type::Vector(Box::new(Type::Undefined)), Value::None)
@@ -60,31 +62,47 @@ pub fn py2code(context: &mut HashMap<String, Param>, content: &str) -> Option<(V
             };
 
             let mut declare = Instruction::CreateVar {
-                type_ : type_.clone(),
-                name  : name.clone(),
-                value : value.clone()
+                type_: type_.clone(),
+                name: name.to_string(),
+                value: value.clone()
             };
 
-            match context.get(&name) {
-                Some(param) => {
-                    if type_ == param.type_ {
-                        declare = Instruction::ReassignVar {
-                            type_: type_.clone(),
-                            name: name.to_string(),
-                            value: value.clone()
-                        };
+            match context.0.get_mut(&name) {
+                Some(vec) => {
+                    let mut new_vec = vec.clone();
+                    for param in vec.iter() {
+                        if name == param.name {
+                            let type_ = type_.clone();
+                            let name = name.to_string();
+                            let value = value.clone();
+                            declare = match type_ == param.type_ {
+                                true => Instruction::ReassignVar { type_, name, value },
+                                false => {
+                                    let name = format!("{}{}", name, rand::thread_rng().gen_range(0..100));
+                                    new_vec.push(
+                                        Param {
+                                            type_: type_.clone(),
+                                            name: name.to_string(),
+                                        }
+                                    );
+                                    Instruction::CreateVar { type_, name, value }
+                                }
+                            };
+                        }
                     }
+                    vec.append(&mut new_vec);
                 },
-                None => {}
-            }
-
-            context.insert(
-                name.to_string(), 
-                Param {
-                    type_: type_.clone(),
-                    name: name.to_string(),
+                None => {
+                    let param = Param {
+                        type_: type_.clone(),
+                        name: name.to_string(),
+                    };
+                    context.0.insert(
+                        name.to_string(),
+                        vec![param]
+                    );
                 }
-            );
+            };
 
             match first_declare {
                 true  => instructions.insert(0, declare),

@@ -1,10 +1,9 @@
-use std::collections::HashMap;
-use crate::py2cpp::types::{Type, Param, Argument, Value, Instruction, Library};
+use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library, Context};
 use crate::py2cpp::constants::{NATIVE_FUNS, RE_FUN, RE_ARGS, RE_INT, RE_STR, RE_VAR};
 use crate::py2cpp::instructions::{int, len};
 use crate::py2cpp::infer::get_type;
 
-pub fn py2code(context: &mut HashMap<String, Param>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(context: &mut Context, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_fun = RE_FUN.captures(content);
 
     match cap_fun {
@@ -24,7 +23,17 @@ pub fn py2code(context: &mut HashMap<String, Param>, content: &str) -> Option<(V
                 let (type_, value) = match content.as_str() {
                     text if RE_INT.is_match(text) => (Type::Int, Value::ConstValue(content)),
                     text if RE_STR.is_match(text) => (Type::String, Value::ConstValue(content)),
-                    text if RE_VAR.is_match(text) => (get_type(text, context), Value::UseVar(content)),
+                    text if RE_VAR.is_match(text) => {
+                        let mut name = String::new();
+                        match context.0.get(text) {
+                            Some(vec) => {
+                                let last = vec.last().unwrap().clone();
+                                name = last.name;
+                            },
+                            None => {}
+                        }
+                        (get_type(text, context), Value::UseVar(name))
+                    },
                     text if RE_FUN.is_match(text) => {
                         let cap = RE_FUN.captures(text).unwrap();
                         let fun = cap.get(0).unwrap().as_str();

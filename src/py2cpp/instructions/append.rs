@@ -1,9 +1,8 @@
-use std::collections::HashMap;
-use crate::py2cpp::types::{Type, Param, Argument, Value, Instruction, Library};
+use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library, Context};
 use crate::py2cpp::constants::{RE_APPEND, RE_INT, RE_STR, RE_VAR};
 use crate::py2cpp::infer::get_type;
 
-pub fn py2code(context: &mut HashMap<String, Param>, fun_body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(context: &mut Context, fun_body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_append = RE_APPEND.captures(content);
 
     match cap_append {
@@ -46,10 +45,6 @@ pub fn py2code(context: &mut HashMap<String, Param>, fun_body: &mut Vec<Instruct
                     _ => {}
                 }
             }
-
-            let type_ = Type::Vector(Box::new(vec_type.clone()));
-            let name = vector.to_string();
-            context.insert(name.to_string(), Param { type_, name });
 
             let name = "append".to_string();
             let instruction = Instruction::CallFun { name, arguments };

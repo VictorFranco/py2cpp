@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use crate::py2cpp::types::{Type, Param, Instruction, Function, Code};
+use crate::py2cpp::types::{Type, Param, Instruction, Function, Code, Context};
 use crate::py2cpp::constants::{RE_HEAD_DEC_FUN, RE_DEC_FUN, RE_PARAMS, RE_INSTRUCTIONS, RE_SHIFT_LEFT, RE_MAIN};
 use crate::py2cpp::instructions::{print, custom_fun, declare, append, r#loop, r#return};
 use crate::py2cpp::infer;
@@ -32,7 +31,7 @@ impl Code {
         (name, params)
     }
 
-    pub fn get_instructions(&mut self, fun_body: &mut Vec<Instruction>, context: &mut HashMap<String, Param>, body: String) -> Vec<Instruction> {
+    pub fn get_instructions(&mut self, fun_body: &mut Vec<Instruction>, context: &mut Context, body: String) -> Vec<Instruction> {
         let caps = RE_INSTRUCTIONS.captures_iter(&body);
         let mut body: Vec<Instruction> = Vec::new();
 

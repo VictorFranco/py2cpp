@@ -1,9 +1,8 @@
-use std::collections::HashMap;
-use crate::py2cpp::types::{Type, Param, Argument, Value, Instruction, Library};
+use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library, Context};
 use crate::py2cpp::constants::{RE_INT_FUN, RE_FUN, RE_STR, RE_VAR};
 use crate::py2cpp::instructions::{custom_fun, declare};
 
-pub fn py2code(context: &mut HashMap<String, Param>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(context: &mut Context, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_int = RE_INT_FUN.captures(content);
 
     match cap_int {
