@@ -1,10 +1,10 @@
 use std::collections::HashMap;
-use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library};
+use crate::py2cpp::types::{Type, Param, Argument, Value, Instruction, Library};
 use crate::py2cpp::constants::{NATIVE_FUNS, RE_FUN, RE_ARGS, RE_INT, RE_STR, RE_VAR};
 use crate::py2cpp::instructions::{int, len};
-use crate::py2cpp::infer::{get_var_type, get_fun_type};
+use crate::py2cpp::infer::get_type;
 
-pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(context: &mut HashMap<String, Param>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_fun = RE_FUN.captures(content);
 
     match cap_fun {
@@ -24,15 +24,15 @@ pub fn py2code(body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, c
                 let (type_, value) = match content.as_str() {
                     text if RE_INT.is_match(text) => (Type::Int, Value::ConstValue(content)),
                     text if RE_STR.is_match(text) => (Type::String, Value::ConstValue(content)),
-                    text if RE_VAR.is_match(text) => (get_var_type(text, body), Value::UseVar(content)),
+                    text if RE_VAR.is_match(text) => (get_type(text, context), Value::UseVar(content)),
                     text if RE_FUN.is_match(text) => {
                         let cap = RE_FUN.captures(text).unwrap();
                         let fun = cap.get(0).unwrap().as_str();
                         let fun_name = cap.get(1).unwrap().as_str();
                         let (arg_type, (instructions, mut fun_libraries)) = match fun_name {
-                            "int" => (Type::Int, int::py2code(body, fun_types, text).unwrap()),
+                            "int" => (Type::Int, int::py2code(context, text).unwrap()),
                             "len" => (Type::Int, len::py2code(fun).unwrap()),
-                            _ => (get_fun_type(fun_types, fun_name), py2code(body, fun_types, text).unwrap())
+                            _ => (get_type(fun_name, context), py2code(context, text).unwrap())
                         };
                         libraries.append(&mut fun_libraries);
                         (arg_type, instructions[0].inst2value())

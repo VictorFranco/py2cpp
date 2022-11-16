@@ -1,9 +1,9 @@
 use std::collections::HashMap;
-use crate::py2cpp::types::{Type, Value, Instruction, Library, Code};
+use crate::py2cpp::types::{Param, Value, Instruction, Library, Code};
 use crate::py2cpp::constants::{RE_FUN, RE_LOOP, RE_INT, RE_VAR};
 use crate::py2cpp::instructions::{custom_fun, len};
 
-pub fn py2code(code: &mut Code, body: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(code: &mut Code, body: &mut Vec<Instruction>, context: &mut HashMap<String, Param>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_return = RE_LOOP.captures(content);
 
     match cap_return {
@@ -24,7 +24,7 @@ pub fn py2code(code: &mut Code, body: &mut Vec<Instruction>, fun_types: &HashMap
                         let fun_name = cap_fun.get(1).unwrap().as_str();
                         let (instructions, _libraries) = match fun_name {
                             "len" => len::py2code(fun).unwrap(),
-                            _ => custom_fun::py2code(body, fun_types, text).unwrap()
+                            _ => custom_fun::py2code(context, text).unwrap()
                         };
                         instructions[0].inst2value()
                     }
@@ -34,7 +34,7 @@ pub fn py2code(code: &mut Code, body: &mut Vec<Instruction>, fun_types: &HashMap
             let [start, end] = values;
             let value = data.get(4).unwrap().as_str();
             let loop_body = Code::shift_code_left(value);
-            let content = code.get_instructions(body, loop_body);
+            let content = code.get_instructions(body, context, loop_body);
             let instruction = Instruction::Loop { counter, start, end, content };
             Some((vec![instruction], vec![]))
         },

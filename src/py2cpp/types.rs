@@ -8,7 +8,7 @@ pub enum Type {
     Undefined
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Param {
     pub type_: Type,
     pub name: String

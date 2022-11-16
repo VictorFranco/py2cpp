@@ -1,7 +1,7 @@
 use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library};
 use crate::py2cpp::constants::RE_AT;
 
-pub fn py2code(_body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_at = RE_AT.captures(content);
 
     match cap_at {

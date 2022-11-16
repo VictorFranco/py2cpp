@@ -1,8 +1,9 @@
-use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library};
+use std::collections::HashMap;
+use crate::py2cpp::types::{Type, Param, Argument, Value, Instruction, Library};
 use crate::py2cpp::constants::{RE_APPEND, RE_INT, RE_STR, RE_VAR};
-use crate::py2cpp::infer::get_var_type;
+use crate::py2cpp::infer::get_type;
 
-pub fn py2code(body: &mut Vec<Instruction>, context: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(context: &mut HashMap<String, Param>, fun_body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_append = RE_APPEND.captures(content);
 
     match cap_append {
@@ -14,7 +15,7 @@ pub fn py2code(body: &mut Vec<Instruction>, context: &mut Vec<Instruction>, cont
             let vec_type = match element {
                 text if RE_INT.is_match(text) => Type::Int,
                 text if RE_STR.is_match(text) => Type::String,
-                text if RE_VAR.is_match(text) => get_var_type(text, body),
+                text if RE_VAR.is_match(text) => get_type(text, context),
                 _ => Type::Undefined
             };
 
@@ -32,7 +33,7 @@ pub fn py2code(body: &mut Vec<Instruction>, context: &mut Vec<Instruction>, cont
                 }
             );
 
-            for instruction in context.iter_mut() {
+            for instruction in fun_body.iter_mut() {
                 match instruction {
                     Instruction::CreateVar { type_, name, value: _ } => {
                         if name.as_str() == vector {
@@ -45,6 +46,10 @@ pub fn py2code(body: &mut Vec<Instruction>, context: &mut Vec<Instruction>, cont
                     _ => {}
                 }
             }
+
+            let type_ = Type::Vector(Box::new(vec_type.clone()));
+            let name = vector.to_string();
+            context.insert(name.to_string(), Param { type_, name });
 
             let name = "append".to_string();
             let instruction = Instruction::CallFun { name, arguments };

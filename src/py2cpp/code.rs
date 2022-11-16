@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::py2cpp::types::{Type, Param, Instruction, Function, Code};
 use crate::py2cpp::constants::{RE_HEAD_DEC_FUN, RE_DEC_FUN, RE_PARAMS, RE_INSTRUCTIONS, RE_SHIFT_LEFT, RE_MAIN};
 use crate::py2cpp::instructions::{print, custom_fun, declare, append, r#loop, r#return};
@@ -31,26 +32,25 @@ impl Code {
         (name, params)
     }
 
-    pub fn get_instructions(&mut self, fun_body: &mut Vec<Instruction>, body: String) -> Vec<Instruction> {
+    pub fn get_instructions(&mut self, fun_body: &mut Vec<Instruction>, context: &mut HashMap<String, Param>, body: String) -> Vec<Instruction> {
         let caps = RE_INSTRUCTIONS.captures_iter(&body);
         let mut body: Vec<Instruction> = Vec::new();
-        let fun_types = infer::get_fun_types(self);
 
         for cap in caps {
             let content = cap.get(1).unwrap().as_str();
             let results = [
                 print::py2code(content, true),
-                declare::py2code(&mut body, fun_body, &fun_types, content),
-                custom_fun::py2code(&mut body, &fun_types, content),
-                append::py2code(&mut body, fun_body, content),
-                r#loop::py2code(self, &mut body, &fun_types, content),
-                r#return::py2code(&mut body, content)
+                declare::py2code(context, content),
+                custom_fun::py2code(context, content),
+                append::py2code(context, fun_body, content),
+                r#loop::py2code(self, &mut body, context, content),
+                r#return::py2code(&body, content)
             ];
             for result in results {
                 match result {
                     Some((mut instructions, mut libraries)) => {
-                        body.append(&mut instructions);
                         self.libraries.append(&mut libraries);
+                        body.append(&mut instructions);
                     }
                     None => {}
                 }
@@ -68,7 +68,8 @@ impl Code {
             body = format!("{}{}\n", body, content);
         }
 
-        let mut body: Vec<Instruction> = self.get_instructions(&mut vec![], body);
+        let mut context = infer::get_fun_types(self);
+        let mut body: Vec<Instruction> = self.get_instructions(&mut vec![], &mut context, body);
         let type_ = Type::Int;
         let value = "0".to_string();
 
@@ -105,7 +106,8 @@ impl Code {
             let body = Self::shift_code_left(body);
             let header = cap.get(0).unwrap().as_str();
 
-            let mut body: Vec<Instruction> = code.get_instructions(&mut vec![], body);
+            let mut context = infer::get_fun_types(&mut code);
+            let mut body: Vec<Instruction> = code.get_instructions(&mut vec![], &mut context, body);
             let type_: Type = infer::get_return_type(&mut body);
             let (name, params): (String, Vec<Param>) = Self::get_header_info(header);
 

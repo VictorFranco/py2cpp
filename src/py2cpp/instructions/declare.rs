@@ -1,10 +1,10 @@
 use std::collections::HashMap;
-use crate::py2cpp::types::{Type, Value, Instruction, Library};
+use crate::py2cpp::types::{Type, Param, Value, Instruction, Library};
 use crate::py2cpp::constants::{RE_FUN, RE_DEC, RE_EXP, RE_AT, RE_INT, RE_STR, RE_VEC, RE_VAR};
 use crate::py2cpp::instructions::{input, custom_fun, int, len, at};
-use crate::py2cpp::infer::{get_var_type, get_fun_type};
+use crate::py2cpp::infer::get_type;
 
-pub fn py2code(body: &mut Vec<Instruction>, context: &mut Vec<Instruction>, fun_types: &HashMap<String, Type>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(context: &mut HashMap<String, Param>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_dec = RE_DEC.captures(content);
 
     match cap_dec {
@@ -18,13 +18,13 @@ pub fn py2code(body: &mut Vec<Instruction>, context: &mut Vec<Instruction>, fun_
                 text if RE_EXP.is_match(text) => (Type::Int, Value::exp2value(text)),
                 text if RE_INT.is_match(text) => (Type::Int, Value::ConstValue(content)),
                 text if RE_STR.is_match(text) => (Type::String, Value::ConstValue(content)),
-                text if RE_VAR.is_match(text) => (get_var_type(text, body), Value::UseVar(content)),
+                text if RE_VAR.is_match(text) => (get_type(text, context), Value::UseVar(content)),
                 text if RE_VEC.is_match(text) => {
                     libraries = Library::get_libraries(&["vector"]);
                     (Type::Vector(Box::new(Type::Undefined)), Value::None)
                 },
                 text if RE_AT.is_match(text) => {
-                    let (at_instructions, _at_libraries) = at::py2code(body, text).unwrap();
+                    let (at_instructions, _at_libraries) = at::py2code(text).unwrap();
                     (Type::Int, at_instructions[0].inst2value())
                 },
                 text if RE_FUN.is_match(text) => {
@@ -38,7 +38,7 @@ pub fn py2code(body: &mut Vec<Instruction>, context: &mut Vec<Instruction>, fun_
                             (Type::String, Value::None, input_libraries)
                         },
                         "int" => {
-                            let (mut int_instructions, int_libraries) = int::py2code(body, fun_types, text).unwrap();
+                            let (mut int_instructions, int_libraries) = int::py2code(context, text).unwrap();
                             instructions.append(&mut int_instructions);
                             let call_instr = instructions.pop().unwrap();
                             let value = call_instr.inst2value();
@@ -49,8 +49,8 @@ pub fn py2code(body: &mut Vec<Instruction>, context: &mut Vec<Instruction>, fun_
                             (Type::Int, len_instructions[0].inst2value(), len_libraries)
                         },
                         _ => {
-                            let (custom_instructions, custom_libraries) = custom_fun::py2code(body, fun_types, text).unwrap();
-                            (get_fun_type(fun_types, fun_name), custom_instructions[0].inst2value(), custom_libraries)
+                            let (custom_instructions, custom_libraries) = custom_fun::py2code(context, text).unwrap();
+                            (get_type(fun_name, context), custom_instructions[0].inst2value(), custom_libraries)
                         }
                     };
                     libraries.append(&mut fun_libraries);
@@ -58,36 +58,34 @@ pub fn py2code(body: &mut Vec<Instruction>, context: &mut Vec<Instruction>, fun_
                 },
                 _ => (Type::Undefined, Value::ConstValue(content))
             };
-            let var_type = type_.clone();
-            let var_name = name.to_string();
-            let var_value = value.clone();
-            let mut declare = Instruction::CreateVar { type_, name, value };
-            for instruction in body.iter() {
-                match instruction {
-                    Instruction::CreateVar { type_, name, value: _ } => {
-                        if &var_name == name && &var_type == type_ {
-                            let type_ = type_.clone();
-                            let name = name.to_string();
-                            let value = var_value.clone();
-                            declare = Instruction::ReassignVar { type_, name, value };
-                        }
-                    },
-                    _ => {}
-                }
+
+            let mut declare = Instruction::CreateVar {
+                type_ : type_.clone(),
+                name  : name.clone(),
+                value : value.clone()
+            };
+
+            match context.get(&name) {
+                Some(param) => {
+                    if type_ == param.type_ {
+                        declare = Instruction::ReassignVar {
+                            type_: type_.clone(),
+                            name: name.to_string(),
+                            value: value.clone()
+                        };
+                    }
+                },
+                None => {}
             }
-            for instruction in context.iter() {
-                match instruction {
-                    Instruction::CreateVar { type_, name, value: _ } => {
-                        if &var_name == name && &var_type == type_ {
-                            let type_ = type_.clone();
-                            let name = name.to_string();
-                            let value = var_value.clone();
-                            declare = Instruction::ReassignVar { type_, name, value };
-                        }
-                    },
-                    _ => {}
+
+            context.insert(
+                name.to_string(), 
+                Param {
+                    type_: type_.clone(),
+                    name: name.to_string(),
                 }
-            }
+            );
+
             match first_declare {
                 true  => instructions.insert(0, declare),
                 false => instructions.push(declare)
@@ -98,9 +96,9 @@ pub fn py2code(body: &mut Vec<Instruction>, context: &mut Vec<Instruction>, fun_
     }
 }
 
-pub fn code2cpp(type_: &Type, name: &String, value: &Value, declare: bool) -> String {
-    let result = match declare {
-        true => format!("{} {}", type_.type2cpp(), name),
+pub fn code2cpp(type_: &Type, name: &String, value: &Value, reuse_var: bool) -> String {
+    let result = match reuse_var {
+        true  => format!("{} {}", type_.type2cpp(), name),
         false => format!("{}", name)
     };
     match value {

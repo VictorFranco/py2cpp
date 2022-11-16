@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::py2cpp::types::{Type, Argument, Instruction, Value, Code};
+use crate::py2cpp::types::{Type, Param, Argument, Instruction, Value, Code};
 use crate::py2cpp::constants::NATIVE_FUNS;
 
 fn store_arg_types(name: &String, called_funs: &mut Vec<String>, fun_types: &mut Vec<Vec<Type>>, arguments: &Vec<Argument>) {
@@ -76,19 +76,26 @@ pub fn get_return_type(body: &mut Vec<Instruction>) -> Type {
     Type::Void
 }
 
-pub fn get_fun_types(code: &mut Code) -> HashMap<String, Type> {
+pub fn get_fun_types(code: &mut Code) -> HashMap<String, Param> {
     let mut return_types = HashMap::new();
     for fun in code.functions.iter() {
-        return_types.insert(fun.name.clone(), fun.type_.clone());
+        return_types.insert(
+            fun.name.to_string(),
+            Param {
+                type_: fun.type_.clone(),
+                name: fun.name.to_string()
+            }
+        );
     }
     return_types
 }
 
-pub fn get_fun_type(fun_types: &HashMap<String, Type>, fun_name: &str) -> Type {
-    fun_types.get(fun_name).unwrap().clone()
+pub fn get_type(name: &str, context: &HashMap<String, Param>) -> Type {
+    let Param { type_, name: _ } = context.get(name).unwrap().clone();
+    type_
 }
 
-pub fn get_var_type(var_name: &str, body: &mut Vec<Instruction>) -> Type {
+pub fn get_var_type(var_name: &str, body: &Vec<Instruction>) -> Type {
     let mut result = Type::Undefined;
     for instruction in body.iter() {
         match instruction {

@@ -20,7 +20,7 @@ impl Value {
                 text if RE_INT.is_match(text) => Value::ConstValue(content),
                 text if RE_VAR.is_match(text) => Value::UseVar(content),
                 text if RE_AT.is_match(text) => {
-                    let (at_instructions, _at_libraries) = at::py2code(&mut vec![], text).unwrap();
+                    let (at_instructions, _at_libraries) = at::py2code(text).unwrap();
                     at_instructions[0].inst2value()
                 },
                 _ => Value::None
