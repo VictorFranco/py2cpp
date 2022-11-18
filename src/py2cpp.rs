@@ -5,6 +5,7 @@ pub mod instruction;
 pub mod operator;
 pub mod value;
 pub mod code;
+pub mod context;
 pub mod constants;
 pub mod instructions;
 pub mod infer;

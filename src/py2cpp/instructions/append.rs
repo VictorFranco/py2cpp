@@ -1,6 +1,5 @@
 use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library, Context};
 use crate::py2cpp::constants::{RE_APPEND, RE_INT, RE_STR, RE_VAR};
-use crate::py2cpp::infer::get_type;
 
 pub fn py2code(context: &mut Context, fun_body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_append = RE_APPEND.captures(content);
@@ -14,7 +13,7 @@ pub fn py2code(context: &mut Context, fun_body: &mut Vec<Instruction>, content: 
             let vec_type = match element {
                 text if RE_INT.is_match(text) => Type::Int,
                 text if RE_STR.is_match(text) => Type::String,
-                text if RE_VAR.is_match(text) => get_type(text, context),
+                text if RE_VAR.is_match(text) => context.get_type(text),
                 _ => Type::Undefined
             };
 

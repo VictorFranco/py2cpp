@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use crate::py2cpp::types::{Type, Param, Argument, Instruction, Value, Code, Context};
+use crate::py2cpp::types::{Type, Argument, Instruction, Value, Code};
 use crate::py2cpp::constants::NATIVE_FUNS;
 
 fn store_arg_types(name: &String, called_funs: &mut Vec<String>, fun_types: &mut Vec<Vec<Type>>, arguments: &Vec<Argument>) {
@@ -74,26 +73,6 @@ pub fn get_return_type(body: &mut Vec<Instruction>) -> Type {
         }
     }
     Type::Void
-}
-
-pub fn get_fun_types(code: &mut Code) -> Context {
-    let mut return_types = HashMap::new();
-    for fun in code.functions.iter() {
-        let param = Param {
-            type_: fun.type_.clone(),
-            name: fun.name.to_string()
-        };
-        return_types.insert(
-            fun.name.to_string(),
-            vec![param]
-        );
-    }
-    Context(return_types)
-}
-
-pub fn get_type(name: &str, context: &Context) -> Type {
-    let Param { type_, name: _ } = context.0.get(name).unwrap().last().unwrap().clone();
-    type_
 }
 
 pub fn get_var_type(var_name: &str, body: &Vec<Instruction>) -> Type {

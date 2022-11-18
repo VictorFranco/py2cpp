@@ -1,7 +1,6 @@
 use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library, Context};
 use crate::py2cpp::constants::{NATIVE_FUNS, RE_FUN, RE_ARGS, RE_INT, RE_STR, RE_VAR};
 use crate::py2cpp::instructions::{int, len};
-use crate::py2cpp::infer::get_type;
 
 pub fn py2code(context: &mut Context, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_fun = RE_FUN.captures(content);
@@ -32,7 +31,7 @@ pub fn py2code(context: &mut Context, content: &str) -> Option<(Vec<Instruction>
                             },
                             None => {}
                         }
-                        (get_type(text, context), Value::UseVar(name))
+                        (context.get_type(text), Value::UseVar(name))
                     },
                     text if RE_FUN.is_match(text) => {
                         let cap = RE_FUN.captures(text).unwrap();
@@ -41,7 +40,7 @@ pub fn py2code(context: &mut Context, content: &str) -> Option<(Vec<Instruction>
                         let (arg_type, (instructions, mut fun_libraries)) = match fun_name {
                             "int" => (Type::Int, int::py2code(context, text).unwrap()),
                             "len" => (Type::Int, len::py2code(fun).unwrap()),
-                            _ => (get_type(fun_name, context), py2code(context, text).unwrap())
+                            _ => (context.get_type(fun_name), py2code(context, text).unwrap())
                         };
                         libraries.append(&mut fun_libraries);
                         (arg_type, instructions[0].inst2value())

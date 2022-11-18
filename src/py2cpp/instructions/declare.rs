@@ -2,7 +2,6 @@ use rand::Rng;
 use crate::py2cpp::types::{Type, Param, Value, Instruction, Library, Context};
 use crate::py2cpp::constants::{RE_FUN, RE_DEC, RE_EXP, RE_AT, RE_INT, RE_STR, RE_VEC, RE_VAR};
 use crate::py2cpp::instructions::{input, custom_fun, int, len, at};
-use crate::py2cpp::infer::get_type;
 
 pub fn py2code(context: &mut Context, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
     let cap_dec = RE_DEC.captures(content);
@@ -19,7 +18,7 @@ pub fn py2code(context: &mut Context, content: &str) -> Option<(Vec<Instruction>
                 text if RE_INT.is_match(text) => (Type::Int, Value::ConstValue(content)),
                 text if RE_STR.is_match(text) => (Type::String, Value::ConstValue(content)),
                 text if RE_VAR.is_match(text) => {
-                    (get_type(text, context), Value::UseVar(content))
+                    (context.get_type(text), Value::UseVar(content))
                 },
                 text if RE_VEC.is_match(text) => {
                     libraries = Library::get_libraries(&["vector"]);
@@ -52,7 +51,7 @@ pub fn py2code(context: &mut Context, content: &str) -> Option<(Vec<Instruction>
                         },
                         _ => {
                             let (custom_instructions, custom_libraries) = custom_fun::py2code(context, text).unwrap();
-                            (get_type(fun_name, context), custom_instructions[0].inst2value(), custom_libraries)
+                            (context.get_type(fun_name), custom_instructions[0].inst2value(), custom_libraries)
                         }
                     };
                     libraries.append(&mut fun_libraries);
