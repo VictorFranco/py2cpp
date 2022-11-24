@@ -2,7 +2,7 @@ use crate::py2cpp::types::{Value, Instruction, Library, Code, Context};
 use crate::py2cpp::constants::{RE_FUN, RE_LOOP, RE_INT, RE_VAR};
 use crate::py2cpp::instructions::{custom_fun, len};
 
-pub fn py2code(code: &mut Code, body: &mut Vec<Instruction>, context: &mut Context, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(code: &mut Code, body: &mut Vec<Instruction>, context: &mut Context, content: &str) -> Option<Result<(Vec<Instruction>, Vec<Library>), String>> {
     let cap_return = RE_LOOP.captures(content);
 
     match cap_return {
@@ -33,9 +33,14 @@ pub fn py2code(code: &mut Code, body: &mut Vec<Instruction>, context: &mut Conte
             let [start, end] = values;
             let value = data.get(4).unwrap().as_str();
             let loop_body = Code::shift_code_left(value);
-            let content = code.get_instructions(body, context, loop_body);
-            let instruction = Instruction::Loop { counter, start, end, content };
-            Some((vec![instruction], vec![]))
+            let result = code.get_instructions(body, context, loop_body);
+            match result {
+                Ok(content) => {
+                    let instruction = Instruction::Loop { counter, start, end, content };
+                    Some(Ok((vec![instruction], vec![])))
+                },
+                Err(error) => Some(Err(error))
+            }
         },
         None => None
     }
