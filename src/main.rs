@@ -12,8 +12,12 @@ fn main() {
     file.read_to_string(&mut py_code).unwrap();
     let py_code = &py_code.to_string();                 // store file content
 
-    let cpp_code: String = Code::transpile(py_code);
-    // print!("{}", cpp_code);
-    let mut file = File::create("./src/main.cpp").unwrap();
-    file.write_all(cpp_code.as_bytes()).unwrap();       // write generated code
+    match Code::transpile(py_code) {
+        Ok(cpp_code) => {
+            // print!("{}", cpp_code);
+            let mut file = File::create("./src/main.cpp").unwrap();
+            file.write_all(cpp_code.as_bytes()).unwrap();       // write generated code
+        },
+        Err(err) => println!("Error: {}", err)
+    }
 }
