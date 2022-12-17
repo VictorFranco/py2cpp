@@ -2,7 +2,7 @@ use crate::py2cpp::types::{Value, Instruction, Library, Code, Context};
 use crate::py2cpp::constants::{RE_FUN, RE_LOOP, RE_INT, RE_VAR};
 use crate::py2cpp::instructions::{custom_fun, len};
 
-pub fn py2code(code: &mut Code, body: &mut Vec<Instruction>, context: &mut Context, content: &str) -> Option<Result<(Vec<Instruction>, Vec<Library>), String>> {
+pub fn py2code(code: &mut Code, body: &mut Vec<Instruction>, context: &mut Context, content: &str) -> Result<Option<(Vec<Instruction>, Vec<Library>)>, String> {
     let cap_return = RE_LOOP.captures(content);
 
     match cap_return {
@@ -14,21 +14,35 @@ pub fn py2code(code: &mut Code, body: &mut Vec<Instruction>, context: &mut Conte
                 data.get(3).unwrap().as_str().to_string()
             ];
             for (index, param) in params.iter().enumerate() {
-                values[index] = match param {
-                    text if RE_INT.is_match(text) => Value::ConstValue(param.to_string()),
-                    text if RE_VAR.is_match(text) => Value::UseVar(param.to_string()),
+                let result = match param {
+                    text if RE_INT.is_match(text) => Ok(Value::ConstValue(param.to_string())),
+                    text if RE_VAR.is_match(text) => Ok(Value::UseVar(param.to_string())),
                     text if RE_FUN.is_match(text) => {
                         let cap_fun = RE_FUN.captures(text).unwrap();
                         let fun = cap_fun.get(0).unwrap().as_str();
                         let fun_name = cap_fun.get(1).unwrap().as_str();
-                        let (instructions, _libraries) = match fun_name {
-                            "len" => len::py2code(fun).unwrap(),
-                            _ => custom_fun::py2code(context, text).unwrap()
+                        let result = match fun_name {
+                            "len" => len::py2code(fun),
+                            _ => custom_fun::py2code(context, text)
                         };
-                        instructions[0].inst2value()
-                    }
-                    _ => Value::None
+                        match result {
+                            Ok(option) => {
+                                match option {
+                                    Some((instructions, _libraries)) => {
+                                        Ok(instructions[0].inst2value())
+                                    },
+                                    None => Ok(Value::None)
+                                }
+                            },
+                            Err(error) => Err(error)
+                        }
+                    },
+                    _ => Ok(Value::None)
                 };
+                match result {
+                    Ok(value) => values[index] = value,
+                    Err(error) => return Err(error)
+                }
             }
             let [start, end] = values;
             let value = data.get(4).unwrap().as_str();
@@ -37,12 +51,12 @@ pub fn py2code(code: &mut Code, body: &mut Vec<Instruction>, context: &mut Conte
             match result {
                 Ok(content) => {
                     let instruction = Instruction::Loop { counter, start, end, content };
-                    Some(Ok((vec![instruction], vec![])))
+                    Ok(Some((vec![instruction], vec![])))
                 },
-                Err(error) => Some(Err(error))
+                Err(error) => Err(error)
             }
         },
-        None => None
+        None => Ok(None)
     }
 }
 

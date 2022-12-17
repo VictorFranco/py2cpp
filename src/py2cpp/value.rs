@@ -16,16 +16,29 @@ impl Value {
         }
         for cap in caps_val {
             let content = cap.get(1).unwrap().as_str().to_string();
-            let value = match content.as_str() {
-                text if RE_INT.is_match(text) => Value::ConstValue(content),
-                text if RE_VAR.is_match(text) => Value::UseVar(content),
+            let result = match content.as_str() {
+                text if RE_INT.is_match(text) => Ok(Value::ConstValue(content)),
+                text if RE_VAR.is_match(text) => Ok(Value::UseVar(content)),
                 text if RE_AT.is_match(text) => {
-                    let (at_instructions, _at_libraries) = at::py2code(text).unwrap();
-                    at_instructions[0].inst2value()
+                    let result = at::py2code(text);
+                    match result {
+                        Ok(option) => {
+                            match option {
+                                Some((at_instructions, _at_libraries)) => {
+                                    Ok(at_instructions[0].inst2value())
+                                },
+                                None => Err(String::new())
+                            }
+                        },
+                        Err(error) => Err(error)
+                    }
                 },
-                _ => Value::None
+                _ => Ok(Value::None)
             };
-            values.push(value);
+            match result {
+                Ok(value) => values.push(value),
+                Err(_) => {}
+            }
         }
 
         Value::Expression { operators, values }

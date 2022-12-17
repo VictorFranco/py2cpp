@@ -2,7 +2,7 @@ use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library};
 use crate::py2cpp::constants::RE_INPUT;
 use crate::py2cpp::instructions::print;
 
-pub fn py2code(var_name: &str, content: &str, newline: bool) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(var_name: &str, content: &str, newline: bool) -> Result<Option<(Vec<Instruction>, Vec<Library>)>, String> {
     let cap_input = RE_INPUT.captures(content);
 
     match cap_input {
@@ -10,7 +10,21 @@ pub fn py2code(var_name: &str, content: &str, newline: bool) -> Option<(Vec<Inst
             // print text
             let content = data.get(1).unwrap().as_str();
             let content = format!("print({})", content);
-            let (mut instructions, mut libraries) = print::py2code(content.as_str(), newline).unwrap();
+            let mut instructions = vec![];
+            let mut libraries = vec![];
+            let result = print::py2code(content.as_str(), newline);
+            match result {
+                Ok(option) => {
+                    match option {
+                        Some((instrs, libs)) => {
+                            instructions = instrs;
+                            libraries = libs;
+                        },
+                        None => {}
+                    }
+                },
+                Err(error) => return Err(error)
+            }
             // save input into variable
             let name = "input".to_string();
             let value = Value::UseVar(var_name.to_string());
@@ -21,9 +35,9 @@ pub fn py2code(var_name: &str, content: &str, newline: bool) -> Option<(Vec<Inst
             let mut string = Library::get_libraries(&["string"]);
             libraries.append(&mut string);
 
-            Some((instructions, libraries))
+            Ok(Some((instructions, libraries)))
         },
-        None => None
+        None => Ok(None)
     }
 }
 

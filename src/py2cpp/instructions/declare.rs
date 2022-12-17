@@ -3,7 +3,7 @@ use crate::py2cpp::types::{Type, Param, Value, Instruction, Library, Context};
 use crate::py2cpp::constants::{RE_FUN, RE_DEC, RE_EXP, RE_AT, RE_INT, RE_STR, RE_VEC, RE_VAR};
 use crate::py2cpp::instructions::{input, custom_fun, int, len, at};
 
-pub fn py2code(context: &mut Context, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(context: &mut Context, content: &str) -> Result<Option<(Vec<Instruction>, Vec<Library>)>, String> {
     let cap_dec = RE_DEC.captures(content);
 
     match cap_dec {
@@ -13,52 +13,109 @@ pub fn py2code(context: &mut Context, content: &str) -> Option<(Vec<Instruction>
             let name = data.get(1).unwrap().as_str().to_string();
             let content = data.get(2).unwrap().as_str().to_string();
             let mut first_declare = false;
-            let (type_, value) = match content.as_str() {
-                text if RE_EXP.is_match(text) => (Type::Int, Value::exp2value(text)),
-                text if RE_INT.is_match(text) => (Type::Int, Value::ConstValue(content)),
-                text if RE_STR.is_match(text) => (Type::String, Value::ConstValue(content)),
+            let result = match content.as_str() {
+                text if RE_EXP.is_match(text) => Ok((Type::Int, Value::exp2value(text))),
+                text if RE_INT.is_match(text) => Ok((Type::Int, Value::ConstValue(content))),
+                text if RE_STR.is_match(text) => Ok((Type::String, Value::ConstValue(content))),
                 text if RE_VAR.is_match(text) => {
-                    (context.get_type(text), Value::UseVar(content))
+                    Ok((context.get_type(text), Value::UseVar(content)))
                 },
                 text if RE_VEC.is_match(text) => {
                     libraries = Library::get_libraries(&["vector"]);
-                    (Type::Vector(Box::new(Type::Undefined)), Value::None)
+                    Ok((Type::Vector(Box::new(Type::Undefined)), Value::None))
                 },
                 text if RE_AT.is_match(text) => {
-                    let (at_instructions, _at_libraries) = at::py2code(text).unwrap();
-                    (Type::Int, at_instructions[0].inst2value())
+                    match at::py2code(text) {
+                        Ok (option) => {
+                            match option {
+                                Some((at_instructions, _at_libraries)) => {
+                                    Ok((Type::Int, at_instructions[0].inst2value()))
+                                },
+                                None => Err(String::new())
+                            }
+                        },
+                        Err(error) => Err(error)
+                    }
                 },
                 text if RE_FUN.is_match(text) => {
                     let cap_fun = RE_FUN.captures(text).unwrap();
                     let fun_name = cap_fun.get(1).unwrap().as_str();
-                    let (fun_type, fun_value, mut fun_libraries) = match fun_name {
+                    let result = match fun_name {
                         "input" => {
                             first_declare = true;
-                            let (mut input_instructions, input_libraries) = input::py2code(&name, text, false).unwrap();
-                            instructions.append(&mut input_instructions);
-                            (Type::String, Value::None, input_libraries)
+                            match input::py2code(&name, text, false) {
+                                Ok(option) => {
+                                    match option {
+                                        Some((mut input_instructions, input_libraries)) => {
+                                            instructions.append(&mut input_instructions);
+                                            Ok((Type::String, Value::None, input_libraries))
+                                        },
+                                        None => Err(String::new())
+                                    }
+                                },
+                                Err(error) => Err(error)
+                            }
                         },
                         "int" => {
-                            let (mut int_instructions, int_libraries) = int::py2code(context, text).unwrap();
-                            instructions.append(&mut int_instructions);
-                            let call_instr = instructions.pop().unwrap();
-                            let value = call_instr.inst2value();
-                            (Type::Int, value, int_libraries)
+                            match int::py2code(context, text) {
+                                Ok(option) => {
+                                    match option {
+                                        Some((mut int_instructions, int_libraries)) => {
+                                            instructions.append(&mut int_instructions);
+                                            let call_instr = instructions.pop().unwrap();
+                                            let value = call_instr.inst2value();
+                                            Ok((Type::Int, value, int_libraries))
+                                        },
+                                        None => Err(String::new())
+                                    }
+                                },
+                                Err(error) => Err(error)
+                            }
                         },
                         "len" => {
-                            let (len_instructions, len_libraries) = len::py2code(text).unwrap();
-                            (Type::Int, len_instructions[0].inst2value(), len_libraries)
+                            match len::py2code(text) {
+                                Ok(option) => {
+                                    match option {
+                                        Some((len_instructions, len_libraries)) => {
+                                            Ok((Type::Int, len_instructions[0].inst2value(), len_libraries))
+                                        },
+                                        None => Err(String::new())
+                                    }
+                                },
+                                Err(error) => Err(error)
+                            }
                         },
                         _ => {
-                            let (custom_instructions, custom_libraries) = custom_fun::py2code(context, text).unwrap();
-                            (context.get_type(fun_name), custom_instructions[0].inst2value(), custom_libraries)
+                            match custom_fun::py2code(context, text) {
+                                Ok(option) => {
+                                    match option {
+                                        Some((custom_instructions, custom_libraries)) => {
+                                            Ok((context.get_type(fun_name), custom_instructions[0].inst2value(), custom_libraries))
+                                        },
+                                        None => Err(String::new())
+                                    }
+                                },
+                                Err(error) => Err(error)
+                            }
                         }
                     };
-                    libraries.append(&mut fun_libraries);
-                    (fun_type, fun_value)
+                    match result {
+                        Ok((fun_type, fun_value, mut fun_libraries)) => {
+                            libraries.append(&mut fun_libraries);
+                            Ok((fun_type, fun_value))
+                        },
+                        Err(error) => Err(error)
+                    }
                 },
-                _ => (Type::Undefined, Value::ConstValue(content))
+                _ => Ok((Type::Undefined, Value::ConstValue(content)))
             };
+
+            match result {
+                Ok(_) => {},
+                Err(error) => return Err(error)
+            }
+
+            let (type_, value) = result.ok().unwrap();
 
             let mut declare = Instruction::CreateVar {
                 type_: type_.clone(),
@@ -107,9 +164,9 @@ pub fn py2code(context: &mut Context, content: &str) -> Option<(Vec<Instruction>
                 true  => instructions.insert(0, declare),
                 false => instructions.push(declare)
             }
-            Some((instructions, libraries))
+            Ok(Some((instructions, libraries)))
         },
-        None => None
+        None => Ok(None)
     }
 }
 

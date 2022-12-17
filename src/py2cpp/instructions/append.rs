@@ -1,7 +1,7 @@
 use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library, Context};
 use crate::py2cpp::constants::{RE_APPEND, RE_INT, RE_STR, RE_VAR};
 
-pub fn py2code(context: &mut Context, fun_body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(context: &mut Context, fun_body: &mut Vec<Instruction>, content: &str) -> Result<Option<(Vec<Instruction>, Vec<Library>)>, String> {
     let cap_append = RE_APPEND.captures(content);
 
     match cap_append {
@@ -47,9 +47,9 @@ pub fn py2code(context: &mut Context, fun_body: &mut Vec<Instruction>, content: 
 
             let name = "append".to_string();
             let instruction = Instruction::CallFun { name, arguments };
-            Some((vec![instruction], vec![]))
+            Ok(Some((vec![instruction], vec![])))
         },
-        None => None
+        None => Ok(None)
     }
 }
 

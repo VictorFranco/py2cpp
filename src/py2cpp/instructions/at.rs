@@ -1,7 +1,7 @@
 use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library};
 use crate::py2cpp::constants::RE_AT;
 
-pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(content: &str) -> Result<Option<(Vec<Instruction>, Vec<Library>)>, String> {
     let cap_at = RE_AT.captures(content);
 
     match cap_at {
@@ -26,9 +26,9 @@ pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
 
             let name = "at".to_string();
             let instruction = Instruction::CallFun { name, arguments };
-            Some((vec![instruction], vec![]))
+            Ok(Some((vec![instruction], vec![])))
         },
-        None => None
+        None => Ok(None)
     }
 }
 

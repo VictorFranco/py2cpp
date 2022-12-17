@@ -37,22 +37,13 @@ impl Code {
 
         for cap in caps {
             let content = cap.get(1).unwrap().as_str();
-            let mut loop_ = None;
-            let option = r#loop::py2code(self, &mut body, context, content);
-
-            if option.is_some() {
-                match option.unwrap() {
-                    Ok(value) => loop_ = Some(value),
-                    Err(_) => break
-                }
-            }
 
             let results = [
                 print::py2code(content, true),
                 declare::py2code(context, content),
                 custom_fun::py2code(context, content),
                 append::py2code(context, fun_body, content),
-                loop_,
+                r#loop::py2code(self, &mut body, context, content),
                 r#return::py2code(&body, content)
             ];
 
@@ -60,12 +51,17 @@ impl Code {
 
             for result in results {
                 match result {
-                    Some((mut instructions, mut libraries)) => {
-                        self.libraries.append(&mut libraries);
-                        body.append(&mut instructions);
-                        is_match = true;
-                    }
-                    None => {}
+                    Ok(option) => {
+                        match option {
+                            Some((mut instructions, mut libraries)) => {
+                                self.libraries.append(&mut libraries);
+                                body.append(&mut instructions);
+                                is_match = true;
+                            },
+                            None => {}
+                        }
+                    },
+                    Err(error) => return Err(error)
                 }
             }
 

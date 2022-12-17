@@ -2,7 +2,7 @@ use crate::py2cpp::types::{Type, Instruction, Library};
 use crate::py2cpp::constants::{RE_RETURN, RE_INT, RE_STR, RE_VEC, RE_VAR};
 use crate::py2cpp::infer::get_var_type;
 
-pub fn py2code(body: &Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(body: &Vec<Instruction>, content: &str) -> Result<Option<(Vec<Instruction>, Vec<Library>)>, String> {
     let cap_return = RE_RETURN.captures(content);
 
     match cap_return {
@@ -16,9 +16,9 @@ pub fn py2code(body: &Vec<Instruction>, content: &str) -> Option<(Vec<Instructio
                 _ => Type::Undefined
             };
             let instruction = Instruction::Return { type_, value };
-            Some((vec![instruction], vec![]))
+            Ok(Some((vec![instruction], vec![])))
         },
-        None => None
+        None => Ok(None)
     }
 }
 

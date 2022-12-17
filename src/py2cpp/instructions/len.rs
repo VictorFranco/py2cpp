@@ -1,7 +1,7 @@
 use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library};
 use crate::py2cpp::constants::RE_LEN;
 
-pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(content: &str) -> Result<Option<(Vec<Instruction>, Vec<Library>)>, String> {
     let cap_int = RE_LEN.captures(content);
 
     match cap_int {
@@ -13,9 +13,9 @@ pub fn py2code(content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
             let name = "len".to_string();
             let arguments = vec![argument];
             let instruction = Instruction::CallFun { name, arguments };
-            Some((vec![instruction], vec![]))
+            Ok(Some((vec![instruction], vec![])))
         },
-        None => None
+        None => Ok(None)
     }
 }
 
