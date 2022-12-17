@@ -68,6 +68,7 @@ pub struct Code {
     pub functions: Vec<Function>
 }
 
+#[derive(Debug)]
 pub struct Context (
     pub HashMap<String, Vec<Param>>
 );

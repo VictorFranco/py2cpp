@@ -1,7 +1,8 @@
 use crate::py2cpp::types::{Type, Param, Instruction, Function, Code, Context};
-use crate::py2cpp::constants::{RE_HEAD_DEC_FUN, RE_DEC_FUN, RE_PARAMS, RE_INSTRUCTIONS, RE_SHIFT_LEFT, RE_MAIN};
+use crate::py2cpp::constants::{RE_COMMENTS, RE_PARAMS_MULTILINE, RE_ARRAY_MULTILINE, RE_HEAD_DEC_FUN, RE_DEC_FUN, RE_PARAMS, RE_INSTRUCTIONS, RE_SHIFT_LEFT, RE_MAIN};
 use crate::py2cpp::instructions::{print, custom_fun, declare, append, r#loop, r#return};
 use crate::py2cpp::infer;
+use std::process::Command;
 
 impl Code {
 
@@ -37,35 +38,31 @@ impl Code {
 
         for cap in caps {
             let content = cap.get(1).unwrap().as_str();
-            let mut loop_ = None;
-            let option = r#loop::py2code(self, &mut body, context, content);
-
-            if option.is_some() {
-                match option.unwrap() {
-                    Ok(value) => loop_ = Some(value),
-                    Err(_) => break
-                }
-            }
 
             let results = [
-                print::py2code(content, true),
+                print::py2code(context, content, true),
                 declare::py2code(context, content),
                 custom_fun::py2code(context, content),
                 append::py2code(context, fun_body, content),
-                loop_,
-                r#return::py2code(&body, content)
+                r#loop::py2code(self, &mut body, context, content),
+                r#return::py2code(&body, context, content)
             ];
 
             is_match = false;
 
             for result in results {
                 match result {
-                    Some((mut instructions, mut libraries)) => {
-                        self.libraries.append(&mut libraries);
-                        body.append(&mut instructions);
-                        is_match = true;
-                    }
-                    None => {}
+                    Ok(option) => {
+                        match option {
+                            Some((mut instructions, mut libraries)) => {
+                                self.libraries.append(&mut libraries);
+                                body.append(&mut instructions);
+                                is_match = true;
+                            }
+                            None => {}
+                        }
+                    },
+                    Err(error) => return Err(error)
                 }
             }
 
@@ -126,31 +123,30 @@ impl Code {
     fn py2code(py_code: &str) -> Result<Code, String> {
         let caps = RE_DEC_FUN.captures_iter(py_code);
         let mut code = Self::create_code();
-        let mut error = None;
 
         for cap in caps {
             let body = cap.get(1).unwrap().as_str();
             let body = Self::shift_code_left(body);
             let header = cap.get(0).unwrap().as_str();
             let mut context = Context::get_fun_types(&mut code);
-            let body: Result<Vec<Instruction>, String> = code.get_instructions(&mut vec![], &mut context, body);
-
-            if body.is_err() {
-                error = Some(body.err().unwrap());
-                break;
-            }
-
-            let mut body = body.ok().unwrap();
-            let type_: Type = infer::get_return_type(&mut body);
             let (name, params): (String, Vec<Param>) = Self::get_header_info(header);
 
-            code.functions.push(
-                Function { type_, name, params, body }
-            );
-        }
+            for param in params.iter() {
+                context.0.insert(param.name.to_string(), vec![param.clone()]);
+            }
 
-        if error.is_some() {
-            return Err(error.unwrap());
+            let body: Result<Vec<Instruction>, String> = code.get_instructions(&mut vec![], &mut context, body);
+
+            match body {
+                Ok(mut body) => {
+                    let type_: Type = infer::get_return_type(&mut body);
+                    code.functions.push(
+                        Function { type_, name, params, body }
+                    );
+                }
+                Err(error) => return Err(error)
+            }
+
         }
 
         let result: Result<Function, String> = code.get_main(py_code);
@@ -213,8 +209,47 @@ impl Code {
         result
     }
 
-    pub fn transpile(py_code: &str) -> Result<String, String> {
-        match Code::py2code(py_code) {
+    pub fn filter(py_code: &str) -> String {
+        let mut code = RE_COMMENTS.replace_all(py_code, "").to_string();
+
+        loop {
+            let cap = RE_PARAMS_MULTILINE.captures(&code);
+            match cap {
+                Some(some) => {
+                    let params_multiline = some.get(0).unwrap().as_str();
+                    let params_oneline = params_multiline.replace("\n", "");
+                    code = code.replace(&params_multiline, &params_oneline).to_string();
+                },
+                None => break
+            } 
+        }
+
+        loop {
+            let cap = RE_ARRAY_MULTILINE.captures(&code);
+            match cap {
+                Some(some) => {
+                    let array_multiline = some.get(0).unwrap().as_str();
+                    let array_oneline = array_multiline.replace("\n", "");
+                    code = code.replace(&array_multiline, &array_oneline).to_string();
+                },
+                None => break
+            } 
+        }
+
+        code
+    }
+
+    pub fn transpile(py_code: &str, file_name: &str) -> Result<String, String> {
+        let status = Command::new("python3").arg("-m").arg("py_compile").arg(file_name).status().ok().unwrap();
+        let code = status.code().unwrap();
+
+        if code == 1 {
+            println!();
+            return Err("Error de sintaxis".to_string());
+        }
+
+        let py_code = Self::filter(py_code);
+        match Code::py2code(&py_code) {
             Ok(code) => {
                 println!("{:?}", code);
                 Ok(code.code2cpp())

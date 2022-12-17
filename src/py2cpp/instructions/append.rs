@@ -1,7 +1,7 @@
 use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library, Context};
 use crate::py2cpp::constants::{RE_APPEND, RE_INT, RE_STR, RE_VAR};
 
-pub fn py2code(context: &mut Context, fun_body: &mut Vec<Instruction>, content: &str) -> Option<(Vec<Instruction>, Vec<Library>)> {
+pub fn py2code(context: &mut Context, fun_body: &mut Vec<Instruction>, content: &str) -> Result<Option<(Vec<Instruction>, Vec<Library>)>, String> {
     let cap_append = RE_APPEND.captures(content);
 
     match cap_append {
@@ -10,12 +10,19 @@ pub fn py2code(context: &mut Context, fun_body: &mut Vec<Instruction>, content: 
             let element = data.get(2).unwrap().as_str();
             let mut arguments = Vec::new();
 
-            let vec_type = match element {
-                text if RE_INT.is_match(text) => Type::Int,
-                text if RE_STR.is_match(text) => Type::String,
+            let result = match element {
+                text if RE_INT.is_match(text) => Ok(Type::Int),
+                text if RE_STR.is_match(text) => Ok(Type::String),
                 text if RE_VAR.is_match(text) => context.get_type(text),
-                _ => Type::Undefined
+                _ => Ok(Type::Undefined)
             };
+
+            let vec_type;
+
+            match result {
+                Ok(type_) => vec_type = type_,
+                Err(error) => return Err(error)
+            }
 
             arguments.push(
                 Argument {
@@ -47,9 +54,9 @@ pub fn py2code(context: &mut Context, fun_body: &mut Vec<Instruction>, content: 
 
             let name = "append".to_string();
             let instruction = Instruction::CallFun { name, arguments };
-            Some((vec![instruction], vec![]))
+            Ok(Some((vec![instruction], vec![])))
         },
-        None => None
+        None => Ok(None)
     }
 }
 

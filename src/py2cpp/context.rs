@@ -18,9 +18,11 @@ impl Context {
         Context(return_types)
     }
 
-    pub fn get_type(&mut self, name: &str) -> Type {
-        let Param { type_, name: _ } = self.0.get(name).unwrap().last().unwrap().clone();
-        type_
+    pub fn get_type(&mut self, name: &str) -> Result<Type, String> {
+        match self.0.get(name) {
+            Some(data) => Ok(data.last().unwrap().type_.clone()),
+            None => Err("Variable o función no encontrada".to_string())
+        }
     }
 
 }

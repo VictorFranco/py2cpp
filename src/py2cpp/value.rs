@@ -1,10 +1,10 @@
-use crate::py2cpp::types::{Operator, Value};
+use crate::py2cpp::types::{Operator, Value, Context};
 use crate::py2cpp::constants::{RE_VAL, RE_OPR, RE_AT, RE_INT, RE_VAR};
 use crate::py2cpp::instructions::{custom_fun, int, len, at};
 
 impl Value {
 
-    pub fn exp2value(content: &str) -> Value {
+    pub fn exp2value(context: &mut Context, content: &str) -> Result<Value, String> {
         let caps_val = RE_VAL.captures_iter(content);
         let caps_opr = RE_OPR.captures_iter(content);
         let mut operators = Vec::new();
@@ -16,19 +16,38 @@ impl Value {
         }
         for cap in caps_val {
             let content = cap.get(1).unwrap().as_str().to_string();
-            let value = match content.as_str() {
-                text if RE_INT.is_match(text) => Value::ConstValue(content),
-                text if RE_VAR.is_match(text) => Value::UseVar(content),
-                text if RE_AT.is_match(text) => {
-                    let (at_instructions, _at_libraries) = at::py2code(text).unwrap();
-                    at_instructions[0].inst2value()
+            let result = match content.as_str() {
+                text if RE_INT.is_match(text) => Ok(Value::ConstValue(content)),
+                text if RE_VAR.is_match(text) => {
+                    let result = context.get_type(text);
+                    match result {
+                        Ok(_) => Ok(Value::UseVar(content)),
+                        Err(err) => Err(err)
+                    }
                 },
-                _ => Value::None
+                text if RE_AT.is_match(text) => {
+                    let result = at::py2code(context, text);
+                    match result {
+                        Ok(option) => {
+                            match option {
+                                Some((at_instructions, _at_libraries)) => {
+                                    Ok(at_instructions[0].inst2value())
+                                },
+                                None => Ok(Value::None)
+                            }
+                        },
+                        Err(error) => Err(error)
+                    }
+                },
+                _ => Err("Valor no identificado".to_string())
             };
-            values.push(value);
+            match result {
+                Ok(value) => values.push(value),
+                Err(err) => return Err(err)
+            }
         }
 
-        Value::Expression { operators, values }
+        Ok(Value::Expression { operators, values })
     }
 
     pub fn exp2cpp(operators: &Vec<Operator>, values: &Vec<Value>) -> String{
