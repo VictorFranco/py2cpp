@@ -1,4 +1,8 @@
 use regex::Regex;
+// filters
+const COMMENTS: &str = r"(?m)\s*(#.*)?$";
+const PARAMS_MULTILINE: &str = r"(?m)\([^)]*\n[^)]*\)";
+const ARRAY_MULTILINE: &str = r"(?m)\[[^\]]*\n[^\]]*\]";
 // functions
 const HEAD_DEC_FUN: &str = r"(?m)def\s([a-zA-Z][a-zA-Z_-]*)\(((([a-zA-Z][a-zA-Z0-9]*),?)*)\):";
 const DEC_FUN: &str = r"(?m)def\s[a-zA-Z][a-zA-Z_-]*\(.*\):\n((\s{4,}.*\n)*)";
@@ -31,6 +35,10 @@ const RETURN: &str = r"^return (.*)$";
 pub const NATIVE_FUNS: [&str; 6] = ["print", "input", "int", "len", "append", "at"];
 
 lazy_static! {
+    pub static ref RE_COMMENTS: Regex = Regex::new(COMMENTS).unwrap();
+    pub static ref RE_PARAMS_MULTILINE: Regex = Regex::new(PARAMS_MULTILINE).unwrap();
+    pub static ref RE_ARRAY_MULTILINE: Regex = Regex::new(ARRAY_MULTILINE).unwrap();
+
     pub static ref RE_HEAD_DEC_FUN: Regex = Regex::new(HEAD_DEC_FUN).unwrap();
     pub static ref RE_DEC_FUN: Regex = Regex::new(DEC_FUN).unwrap();
     pub static ref RE_PARAMS: Regex = Regex::new(PARAMS).unwrap();

@@ -1,5 +1,5 @@
 use crate::py2cpp::types::{Type, Param, Instruction, Function, Code, Context};
-use crate::py2cpp::constants::{RE_HEAD_DEC_FUN, RE_DEC_FUN, RE_PARAMS, RE_INSTRUCTIONS, RE_SHIFT_LEFT, RE_MAIN};
+use crate::py2cpp::constants::{RE_COMMENTS, RE_PARAMS_MULTILINE, RE_ARRAY_MULTILINE, RE_HEAD_DEC_FUN, RE_DEC_FUN, RE_PARAMS, RE_INSTRUCTIONS, RE_SHIFT_LEFT, RE_MAIN};
 use crate::py2cpp::instructions::{print, custom_fun, declare, append, r#loop, r#return};
 use crate::py2cpp::infer;
 
@@ -209,8 +209,39 @@ impl Code {
         result
     }
 
+    pub fn filter(py_code: &str) -> String {
+        let mut code = RE_COMMENTS.replace_all(py_code, "").to_string();
+
+        loop {
+            let cap = RE_PARAMS_MULTILINE.captures(&code);
+            match cap {
+                Some(some) => {
+                    let params_multiline = some.get(0).unwrap().as_str();
+                    let params_oneline = params_multiline.replace("\n", "");
+                    code = code.replace(&params_multiline, &params_oneline).to_string();
+                },
+                None => break
+            }
+        }
+
+        loop {
+            let cap = RE_ARRAY_MULTILINE.captures(&code);
+            match cap {
+                Some(some) => {
+                    let array_multiline = some.get(0).unwrap().as_str();
+                    let array_oneline = array_multiline.replace("\n", "");
+                    code = code.replace(&array_multiline, &array_oneline).to_string();
+                },
+                None => break
+            }
+        }
+
+        code
+    }
+
     pub fn transpile(py_code: &str) -> Result<String, String> {
-        match Code::py2code(py_code) {
+        let py_code = Self::filter(py_code);
+        match Code::py2code(&py_code) {
             Ok(code) => {
                 println!("{:?}", code);
                 Ok(code.code2cpp())
