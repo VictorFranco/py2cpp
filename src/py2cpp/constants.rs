@@ -4,33 +4,34 @@ const COMMENTS: &str = r"(?m)\s*(#.*)?$";
 const PARAMS_MULTILINE: &str = r"(?m)\([^)]*\n[^)]*\)";
 const ARRAY_MULTILINE: &str = r"(?m)\[[^\]]*\n[^\]]*\]";
 // functions
-const HEAD_DEC_FUN: &str = r"(?m)def\s([a-zA-Z][a-zA-Z_-]*)\(((([a-zA-Z][a-zA-Z0-9]*),?)*)\):";
-const DEC_FUN: &str = r"(?m)def\s[a-zA-Z][a-zA-Z_-]*\(.*\):\n((\s{4,}.*\n)*)";
+const HEAD_DEC_FUN: &str = r"(?m)def\s([a-zA-Z][a-zA-Z_-]*)\(((\s*([a-zA-Z][a-zA-Z0-9]*)\s*,?)*)\)\s*:";
+const DEC_FUN: &str = r"(?m)def\s[a-zA-Z][a-zA-Z_-]*\(.*\)\s*:\n((\s{4,}.*\n)*)";
 const PARAMS: &str = r"[a-zA-Z][a-zA-Z0-9]*";
 const INSTRUCTIONS: &str = r"(?m)(for.*\n((\s{4,}.*\n?)*)|(.*))\n";
 const SHIFT_LEFT: &str = r"(?m)\s{4}(.*)\n?";
-const MAIN: &str = r"(?m)^\S{4,}.*$";
+const MAIN: &str = r"(?m)^(\S{1}|\S{2}|[^d\s][^e][^f]\S.*)$";
 // data types
 const INTEGER: &str = r"^[+-]?\s*(\d+)$";
 const STRING: &str = r##"^"[a-zA-Z0-9: ]*"$"##;
-const VECTOR: &str = r"^\[\]$";
+const VECTOR: &str = r"^\[\s*\]$";
 const VARIABLE: &str = r"^[a-zA-Z][a-zA-Z0-9]*$";
 // instructions
-const PRINT: &str = r##"^print\((.*)\)[^"]*$"##;
+const PRINT: &str = r##"^print\s*\((.*)\)[^"]*$"##;
 const MESSAGES: &str = r##"("[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]*),?"##;
-const INPUT: &str = r##"^input\((.*)\)$"##;
-const FUNCTION: &str = r##"^([a-zA-Z][a-zA-Z0-9]*)\((.*)\)[^"]*$"##;
+const INPUT: &str = r##"input\s*\(\s*(.*)\s*\)"##;
+const FUNCTION: &str = r##"^([a-zA-Z][a-zA-Z0-9]*)\s*\((.*)\)[^"]*$"##;
 const ARGUMENTS: &str = r##"([+-]?\s*\d+|"[ a-zA-Z0-9: ]+"|[a-zA-Z][a-zA-Z0-9]*(\(.*\))?),?"##;
 const DECLARE: &str = r##"(?m)^([a-zA-Z][a-zA-Z0-9]*)\s*=\s*(.*)$"##;
-const EXPRESSION: &str = r##"^((\d+|[a-zA-Z][a-zA-Z0-9]*(\[.*\])?)\s*[+\-/*])+\s*(\d+|[a-zA-Z][a-zA-Z0-9]*(\[.*\])?)$"##;
-const VALUE: &str = r##"\s*(\d+|[a-zA-Z][a-zA-Z0-9]*(\[.*\])?)\s*"##;
+const EXPRESSION: &str = r##"^((\d+|[a-zA-Z][a-zA-Z0-9]*\s*(\[.*\])?)\s*[+\-/*])+\s*(\d+|[a-zA-Z][a-zA-Z0-9]*\s*(\[.*\])?)$"##;
+const VALUE: &str = r##"\s*(\d+|[a-zA-Z][a-zA-Z0-9]*(\s*\[.*\])?)\s*"##;
 const OPERATOR: &str = r##"[+\-/*]"##;
-const INT_FUN: &str = r##"^int\((.*)\)$"##;
-const LOOP: &str = r"(?m)for ([a-zA-Z][a-zA-Z0-9]*) in range\(\s*(.*)\s*,\s*(.*)\s*\):\n((.*\n?)*)";
-const LEN: &str = r"^len\((.*)\)$";
-const AT: &str = r"^([a-zA-Z][a-zA-Z0-9]*)\[(\d+|[a-zA-Z][a-zA-Z0-9]*)\]$";
-const APPEND: &str = r"^([a-zA-Z][a-zA-Z0-9]*)\.append\((.*)\)\s*$";
-const RETURN: &str = r"^return (.*)$";
+const INT_FUN: &str = r##"^int\s*\(\s*(.*)\s*\)$"##;
+const LOOP: &str = r"(?m)for\s*([a-zA-Z][a-zA-Z0-9]*)\s*in\s*range\s*\(\s*(\S*)\s*,\s*(\S*|.*)\s*\)\s*:\n((.*\n?)*)";
+const LEN: &str = r"^\s*len\s*\(\s*(\S*)\s*\)\s*";
+const AT: &str = r"^([a-zA-Z][a-zA-Z0-9]*)\s*\[\s*(\d+|[a-zA-Z][a-zA-Z0-9]*)\s*\]$";
+const APPEND: &str = r"^([a-zA-Z][a-zA-Z0-9]*)\.append\(\s*(\S*)\s*\)\s*$";
+const RETURN: &str = r"^return\s*(\S*)$";
+ // functions
 
 pub const NATIVE_FUNS: [&str; 6] = ["print", "input", "int", "len", "append", "at"];
 
