@@ -21,7 +21,7 @@ impl Context {
     pub fn get_type(&mut self, name: &str) -> Result<Type, String> {
         match self.0.get(name) {
             Some(data) => Ok(data.last().unwrap().type_.clone()),
-            None => Err("Variable o función no encontrada".to_string())
+            None => Err(format!("La variable o función \"{name}\" no encontrada"))
         }
     }
 
