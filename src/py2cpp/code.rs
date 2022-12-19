@@ -2,6 +2,7 @@ use crate::py2cpp::types::{Type, Param, Instruction, Function, Code, Context};
 use crate::py2cpp::constants::{RE_COMMENTS, RE_PARAMS_MULTILINE, RE_ARRAY_MULTILINE, RE_HEAD_DEC_FUN, RE_DEC_FUN, RE_PARAMS, RE_INSTRUCTIONS, RE_SHIFT_LEFT, RE_MAIN};
 use crate::py2cpp::instructions::{print, custom_fun, declare, append, r#loop, r#return};
 use crate::py2cpp::infer;
+use std::process::Command;
 
 impl Code {
 
@@ -239,7 +240,15 @@ impl Code {
         code
     }
 
-    pub fn transpile(py_code: &str) -> Result<String, String> {
+    pub fn transpile(py_code: &str, file_name: &str) -> Result<String, String> {
+        let status = Command::new("python3").arg("-m").arg("py_compile").arg(file_name).status().ok().unwrap();
+        let code = status.code().unwrap();
+
+        if code == 1 {
+            println!();
+            return Err("Error de sintaxis".to_string());
+        }
+
         let py_code = Self::filter(py_code);
         match Code::py2code(&py_code) {
             Ok(code) => {
