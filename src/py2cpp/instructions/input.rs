@@ -1,8 +1,8 @@
-use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library};
+use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library, Context};
 use crate::py2cpp::constants::RE_INPUT;
 use crate::py2cpp::instructions::print;
 
-pub fn py2code(var_name: &str, content: &str, newline: bool) -> Result<Option<(Vec<Instruction>, Vec<Library>)>, String> {
+pub fn py2code(context: &mut Context,var_name: &str, content: &str, newline: bool) -> Result<Option<(Vec<Instruction>, Vec<Library>)>, String> {
     let cap_input = RE_INPUT.captures(content);
 
     match cap_input {
@@ -12,7 +12,7 @@ pub fn py2code(var_name: &str, content: &str, newline: bool) -> Result<Option<(V
             let content = format!("print({})", content);
             let mut instructions = vec![];
             let mut libraries = vec![];
-            let result = print::py2code(content.as_str(), newline);
+            let result = print::py2code(context, content.as_str(), newline);
             match result {
                 Ok(option) => {
                     match option {

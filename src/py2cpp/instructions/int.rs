@@ -14,7 +14,13 @@ pub fn py2code(context: &mut Context, content: &str) -> Result<Option<(Vec<Instr
             let content = data.get(1).unwrap().as_str().to_string();
             let result= match content.as_str() {
                 text if RE_STR.is_match(text) => Ok(Value::ConstValue(content)),
-                text if RE_VAR.is_match(text) => Ok(Value::UseVar(content)),
+                text if RE_VAR.is_match(text) => {
+                    let result = context.get_type(text);
+                    match result {
+                        Ok(_) => Ok(Value::UseVar(content)),
+                        Err(error) => Err(error)
+                    }
+                },
                 text if RE_FUN.is_match(text) => {
                     let cap_fun = RE_FUN.captures(text).unwrap();
                     let fun_name = cap_fun.get(1).unwrap().as_str();
@@ -36,7 +42,7 @@ pub fn py2code(context: &mut Context, content: &str) -> Result<Option<(Vec<Instr
                                 },
                                 None => Ok(Value::None)
                             }
-                        }
+                        },
                         Err(error) => Err(error)
                     }
                 },

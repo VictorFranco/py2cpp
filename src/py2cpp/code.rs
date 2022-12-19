@@ -40,12 +40,12 @@ impl Code {
             let content = cap.get(1).unwrap().as_str();
 
             let results = [
-                print::py2code(content, true),
+                print::py2code(context, content, true),
                 declare::py2code(context, content),
                 custom_fun::py2code(context, content),
                 append::py2code(context, fun_body, content),
                 r#loop::py2code(self, &mut body, context, content),
-                r#return::py2code(&body, content)
+                r#return::py2code(&body, context, content)
             ];
 
             is_match = false;
@@ -123,31 +123,30 @@ impl Code {
     fn py2code(py_code: &str) -> Result<Code, String> {
         let caps = RE_DEC_FUN.captures_iter(py_code);
         let mut code = Self::create_code();
-        let mut error = None;
 
         for cap in caps {
             let body = cap.get(1).unwrap().as_str();
             let body = Self::shift_code_left(body);
             let header = cap.get(0).unwrap().as_str();
             let mut context = Context::get_fun_types(&mut code);
-            let body: Result<Vec<Instruction>, String> = code.get_instructions(&mut vec![], &mut context, body);
-
-            if body.is_err() {
-                error = Some(body.err().unwrap());
-                break;
-            }
-
-            let mut body = body.ok().unwrap();
-            let type_: Type = infer::get_return_type(&mut body);
             let (name, params): (String, Vec<Param>) = Self::get_header_info(header);
 
-            code.functions.push(
-                Function { type_, name, params, body }
-            );
-        }
+            for param in params.iter() {
+                context.0.insert(param.name.to_string(), vec![param.clone()]);
+            }
 
-        if error.is_some() {
-            return Err(error.unwrap());
+            let body: Result<Vec<Instruction>, String> = code.get_instructions(&mut vec![], &mut context, body);
+
+            match body {
+                Ok(mut body) => {
+                    let type_: Type = infer::get_return_type(&mut body);
+                    code.functions.push(
+                        Function { type_, name, params, body }
+                    );
+                },
+                Err(error) => return Err(error)
+            }
+
         }
 
         let result: Result<Function, String> = code.get_main(py_code);

@@ -16,27 +16,33 @@ pub fn py2code(code: &mut Code, body: &mut Vec<Instruction>, context: &mut Conte
             for (index, param) in params.iter().enumerate() {
                 let result = match param {
                     text if RE_INT.is_match(text) => Ok(Value::ConstValue(param.to_string())),
-                    text if RE_VAR.is_match(text) => Ok(Value::UseVar(param.to_string())),
+                    text if RE_VAR.is_match(text) => {
+                        let result = context.get_type(param);
+                        match result {
+                            Ok(_) => Ok(Value::UseVar(param.to_string())),
+                            Err(error) => Err(error)
+                        }
+                    },
                     text if RE_FUN.is_match(text) => {
                         let cap_fun = RE_FUN.captures(text).unwrap();
                         let fun = cap_fun.get(0).unwrap().as_str();
                         let fun_name = cap_fun.get(1).unwrap().as_str();
                         let result = match fun_name {
-                            "len" => len::py2code(fun),
+                            "len" => len::py2code(context, fun),
                             _ => custom_fun::py2code(context, text)
                         };
                         match result {
                             Ok(option) => {
                                 match option {
-                                    Some((instructions, _libraries)) => {
+                                    Some((instructions, _librearies)) => {
                                         Ok(instructions[0].inst2value())
                                     },
                                     None => Ok(Value::None)
                                 }
-                            },
+                            }
                             Err(error) => Err(error)
                         }
-                    },
+                    }
                     _ => Ok(Value::None)
                 };
                 match result {
@@ -82,5 +88,8 @@ pub fn code2cpp(counter: &String, start: &Value, end: &Value, content: &Vec<Inst
         body.push_str( "    ");
     }
 
-    format!("{} {{\n{}}}", header, body)
+    match content.len() {
+        1 => format!("{}\n{}", header, body.trim_end()),
+        _ => format!("{} {{\n{}}}", header, body)
+    }
 }

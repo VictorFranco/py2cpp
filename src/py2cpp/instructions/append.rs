@@ -10,12 +10,19 @@ pub fn py2code(context: &mut Context, fun_body: &mut Vec<Instruction>, content: 
             let element = data.get(2).unwrap().as_str();
             let mut arguments = Vec::new();
 
-            let vec_type = match element {
-                text if RE_INT.is_match(text) => Type::Int,
-                text if RE_STR.is_match(text) => Type::String,
+            let result = match element {
+                text if RE_INT.is_match(text) => Ok(Type::Int),
+                text if RE_STR.is_match(text) => Ok(Type::String),
                 text if RE_VAR.is_match(text) => context.get_type(text),
-                _ => Type::Undefined
+                _ => Ok(Type::Undefined)
             };
+
+            let vec_type;
+
+            match result {
+                Ok(type_) => vec_type = type_,
+                Err(error) => return Err(error)
+            }
 
             arguments.push(
                 Argument {

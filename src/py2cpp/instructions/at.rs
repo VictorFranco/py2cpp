@@ -1,7 +1,7 @@
-use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library};
+use crate::py2cpp::types::{Type, Argument, Value, Instruction, Library, Context};
 use crate::py2cpp::constants::RE_AT;
 
-pub fn py2code(content: &str) -> Result<Option<(Vec<Instruction>, Vec<Library>)>, String> {
+pub fn py2code(context: &mut Context, content: &str) -> Result<Option<(Vec<Instruction>, Vec<Library>)>, String> {
     let cap_at = RE_AT.captures(content);
 
     match cap_at {
@@ -9,6 +9,12 @@ pub fn py2code(content: &str) -> Result<Option<(Vec<Instruction>, Vec<Library>)>
             let vector = data.get(1).unwrap().as_str().to_string();
             let index = data.get(2).unwrap().as_str().to_string();
             let mut arguments = Vec::new();
+            let result = context.get_type(&vector);
+
+            match result {
+                Ok(_) => {},
+                Err(error) => return Err(error)
+            }
 
             arguments.push(
                 Argument {

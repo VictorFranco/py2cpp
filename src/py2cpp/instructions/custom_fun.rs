@@ -15,13 +15,17 @@ pub fn py2code(context: &mut Context, content: &str) -> Result<Option<(Vec<Instr
             let arguments = data.get(2).unwrap().as_str();
             let caps_args = RE_ARGS.captures_iter(arguments);
             let name = fun.to_string();
+            match context.get_type(&name) {
+                Ok(_) => {},
+                Err(error) => return Err(error)
+            }
             let mut arguments = Vec::new();
 
             for cap in caps_args {
                 let content = cap.get(1).unwrap().as_str().to_string();
-                let result = match content.as_str() {
-                    text if RE_INT.is_match(text) => Ok((Type::Int, Value::ConstValue(content))),
-                    text if RE_STR.is_match(text) => Ok((Type::String, Value::ConstValue(content))),
+                let (result, value) = match content.as_str() {
+                    text if RE_INT.is_match(text) => (Ok(Type::Int), Value::ConstValue(content)),
+                    text if RE_STR.is_match(text) => (Ok(Type::String), Value::ConstValue(content)),
                     text if RE_VAR.is_match(text) => {
                         let mut name = String::new();
                         match context.0.get(text) {
@@ -31,35 +35,39 @@ pub fn py2code(context: &mut Context, content: &str) -> Result<Option<(Vec<Instr
                             },
                             None => {}
                         }
-                        Ok((context.get_type(text), Value::UseVar(name)))
+                        (context.get_type(text), Value::UseVar(name))
                     },
                     text if RE_FUN.is_match(text) => {
                         let cap = RE_FUN.captures(text).unwrap();
                         let fun = cap.get(0).unwrap().as_str();
                         let fun_name = cap.get(1).unwrap().as_str();
-                        let result = match fun_name {
-                            "int" => Ok((Type::Int, int::py2code(context, text).unwrap())),
-                            "len" => Ok((Type::Int, len::py2code(fun).unwrap())),
-                            _ => Ok((context.get_type(fun_name), py2code(context, text).unwrap()))
+                        let (arg_type, result) = match fun_name {
+                            "int" => (Ok(Type::Int), int::py2code(context, text)),
+                            "len" => (Ok(Type::Int), len::py2code(context,fun)),
+                            _ => (context.get_type(fun_name), py2code(context, text))
                         };
+                        let mut instructions = vec![];
+                        let mut fun_libraries = vec![];
                         match result {
-                            Ok((arg_type, option)) => {
+                            Ok(option) => {
                                 match option {
-                                    Some((instructions, mut fun_libraries)) => {
-                                        libraries.append(&mut fun_libraries);
-                                        Ok((arg_type, instructions[0].inst2value()))
+                                    Some((insts, libs)) => {
+                                        instructions = insts;
+                                        fun_libraries = libs;
                                     },
-                                    None => Err(String::new())
+                                    None => {}
                                 }
                             },
-                            Err(error) => Err(error)
+                            Err(error) => return Err(error)
                         }
+                        libraries.append(&mut fun_libraries);
+                        (arg_type, instructions[0].inst2value())
                     },
-                    _ => Ok((Type::Undefined, Value::None))
+                    _ => (Ok(Type::Undefined), Value::None)
                 };
 
                 match result {
-                    Ok((type_, value)) => {
+                    Ok(type_) => {
                         arguments.push(
                             Argument { type_, value }
                         );

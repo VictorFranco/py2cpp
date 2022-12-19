@@ -13,24 +13,33 @@ pub fn py2code(context: &mut Context, content: &str) -> Result<Option<(Vec<Instr
             let name = data.get(1).unwrap().as_str().to_string();
             let content = data.get(2).unwrap().as_str().to_string();
             let mut first_declare = false;
-            let result = match content.as_str() {
-                text if RE_EXP.is_match(text) => Ok((Type::Int, Value::exp2value(text))),
+            let result: Result<(Type, Value), String> = match content.as_str() {
+                text if RE_EXP.is_match(text) => {
+                    let result = Value::exp2value(context, text);
+                    match result {
+                        Ok(value) => Ok((Type::Int, value)),
+                        Err(error) => Err(error)
+                    }
+                },
                 text if RE_INT.is_match(text) => Ok((Type::Int, Value::ConstValue(content))),
                 text if RE_STR.is_match(text) => Ok((Type::String, Value::ConstValue(content))),
                 text if RE_VAR.is_match(text) => {
-                    Ok((context.get_type(text), Value::UseVar(content)))
+                    let result = context.get_type(text);
+                    match result {
+                        Ok(type_) => Ok((type_, Value::UseVar(content))),
+                        Err(error) => Err(error)
+                    }
                 },
                 text if RE_VEC.is_match(text) => {
                     libraries = Library::get_libraries(&["vector"]);
                     Ok((Type::Vector(Box::new(Type::Undefined)), Value::None))
                 },
                 text if RE_AT.is_match(text) => {
-                    match at::py2code(text) {
-                        Ok (option) => {
+                    let result = at::py2code(context, text);
+                    match result {
+                        Ok(option) => {
                             match option {
-                                Some((at_instructions, _at_libraries)) => {
-                                    Ok((Type::Int, at_instructions[0].inst2value()))
-                                },
+                                Some((at_instructions, _)) => Ok((Type::Int, at_instructions[0].inst2value())),
                                 None => Err(String::new())
                             }
                         },
@@ -43,7 +52,8 @@ pub fn py2code(context: &mut Context, content: &str) -> Result<Option<(Vec<Instr
                     let result = match fun_name {
                         "input" => {
                             first_declare = true;
-                            match input::py2code(&name, text, false) {
+                            let result = input::py2code(context, &name, text, false);
+                            match result {
                                 Ok(option) => {
                                     match option {
                                         Some((mut input_instructions, input_libraries)) => {
@@ -57,7 +67,8 @@ pub fn py2code(context: &mut Context, content: &str) -> Result<Option<(Vec<Instr
                             }
                         },
                         "int" => {
-                            match int::py2code(context, text) {
+                            let result = int::py2code(context, text);
+                            match result {
                                 Ok(option) => {
                                     match option {
                                         Some((mut int_instructions, int_libraries)) => {
@@ -73,7 +84,8 @@ pub fn py2code(context: &mut Context, content: &str) -> Result<Option<(Vec<Instr
                             }
                         },
                         "len" => {
-                            match len::py2code(text) {
+                            let result = len::py2code(context, text);
+                            match result {
                                 Ok(option) => {
                                     match option {
                                         Some((len_instructions, len_libraries)) => {
@@ -86,11 +98,17 @@ pub fn py2code(context: &mut Context, content: &str) -> Result<Option<(Vec<Instr
                             }
                         },
                         _ => {
-                            match custom_fun::py2code(context, text) {
+                            let result = custom_fun::py2code(context, text);
+                            match result {
                                 Ok(option) => {
                                     match option {
                                         Some((custom_instructions, custom_libraries)) => {
-                                            Ok((context.get_type(fun_name), custom_instructions[0].inst2value(), custom_libraries))
+                                            match context.get_type(fun_name) {
+                                                Ok(type_)  => {
+                                                    Ok((type_, custom_instructions[0].inst2value(), custom_libraries))
+                                                },
+                                                Err(error) => Err(error)
+                                            }
                                         },
                                         None => Err(String::new())
                                     }
@@ -107,7 +125,12 @@ pub fn py2code(context: &mut Context, content: &str) -> Result<Option<(Vec<Instr
                         Err(error) => Err(error)
                     }
                 },
-                _ => Ok((Type::Undefined, Value::ConstValue(content)))
+                _ => {
+                    match content.as_str() != "" {
+                        true => Ok((Type::Undefined, Value::ConstValue(content))),
+                        false => Err("Falta asignar el valor".to_string())
+                    }
+                }
             };
 
             match result {
