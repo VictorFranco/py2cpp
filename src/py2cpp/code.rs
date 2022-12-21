@@ -157,12 +157,15 @@ impl Code {
         let main = result.ok().unwrap();
         code.functions.push(main);
 
-        infer::param_types(&mut code);
+        match infer::param_types(&mut code) {
+            Ok(_) => {
+                code.libraries.sort();
+                code.libraries.dedup();         // remove duplicate libraries
+                Ok(code)
+            }
+            Err(error) => Err(error)
+        }
 
-        code.libraries.sort();
-        code.libraries.dedup();         // remove duplicate libraries
-
-        Ok(code)
     }
 
     fn fun2cpp(function: &Function) -> String {
